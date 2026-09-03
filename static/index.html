@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0e1c37" />
+    <meta
+      name="description"
+      content="Generador interno de minutas financiadas para Villa Hermosa de Carhuaz."
+    />
+    <link rel="icon" type="image/png" href="/assets/villa-hermosa-icon.png" />
+    <link rel="apple-touch-icon" href="/assets/villa-hermosa-icon.png" />
+    <link rel="stylesheet" href="/styles.css?v=20260824h" />
+    <title>Minutas Villa Hermosa</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Saltar al contenido</a>
+
+    <div id="login-view" class="login-layout" aria-labelledby="login-title">
+      <section class="login-showcase" aria-label="Villa Hermosa de Carhuaz">
+        <div class="login-showcase__overlay"></div>
+        <div class="login-showcase__content">
+          <div class="login-brand-lockup">
+            <img
+              class="login-brand-lockup__logo"
+              src="/assets/villa-hermosa-wordmark.png"
+              alt="Villa Hermosa"
+            />
+            <span class="login-brand-lockup__divider" aria-hidden="true"></span>
+            <img
+              class="login-brand-lockup__partner"
+              src="/assets/ayt-house-logo.png"
+              alt="AYT House Inmobiliaria"
+            />
+          </div>
+          <div class="showcase-copy">
+            <span class="eyebrow eyebrow--light">Gestión inmobiliaria</span>
+            <h1>Una minuta lista en minutos.</h1>
+            <p>
+              Registra al cliente una sola vez, revisa los datos y descarga el documento
+              completo sin editar Word.
+            </p>
+          </div>
+          <div class="showcase-points" aria-label="Beneficios">
+            <div class="showcase-point">
+              <span class="showcase-point__icon" aria-hidden="true">01</span>
+              <span><strong>Plantilla oficial</strong> siempre protegida</span>
+            </div>
+            <div class="showcase-point">
+              <span class="showcase-point__icon" aria-hidden="true">02</span>
+              <span><strong>Validación guiada</strong> antes de descargar</span>
+            </div>
+            <div class="showcase-point">
+              <span class="showcase-point__icon" aria-hidden="true">03</span>
+              <span><strong>Historial seguro</strong> por asesor</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <main class="login-panel">
+        <div class="login-panel__inner">
+          <div class="mobile-brand">
+            <img src="/assets/villa-hermosa-wordmark.png" alt="Villa Hermosa" />
+          </div>
+          <div class="login-heading">
+            <span class="eyebrow">Acceso interno</span>
+            <h2 id="login-title">Bienvenido de nuevo</h2>
+            <p>Ingresa con tu correo corporativo para continuar.</p>
+          </div>
+
+          <form id="login-form" class="auth-form" novalidate>
+            <div class="field-group">
+              <label for="login-email">Correo corporativo</label>
+              <div class="input-shell">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M4 5h16v14H4z" />
+                  <path d="m4 7 8 6 8-6" />
+                </svg>
+                <input
+                  id="login-email"
+                  name="email"
+                  type="email"
+                  inputmode="email"
+                  autocomplete="username"
+                  placeholder="nombre@villahermosa.com"
+                  aria-describedby="login-email-error"
+                  aria-errormessage="login-email-error"
+                  required
+                />
+              </div>
+              <p class="field-error" id="login-email-error"></p>
+            </div>
+
+            <div class="field-group">
+              <div class="label-row">
+                <label for="login-password">Contraseña</label>
+              </div>
+              <div class="input-shell">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <rect x="5" y="10" width="14" height="10" rx="2" />
+                  <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                </svg>
+                <input
+                  id="login-password"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="Ingresa tu contraseña"
+                  aria-describedby="login-password-error"
+                  aria-errormessage="login-password-error"
+                  required
+                />
+                <button
+                  class="icon-button input-action"
+                  id="toggle-password"
+                  type="button"
+                  aria-label="Mostrar contraseña"
+                  aria-pressed="false"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                    <circle cx="12" cy="12" r="2.5" />
+                  </svg>
+                </button>
+              </div>
+              <p class="field-error" id="login-password-error"></p>
+            </div>
+
+            <div id="login-alert" class="inline-alert" role="alert" hidden></div>
+
+            <button id="login-submit" class="button button--primary button--large" type="submit">
+              <span>Ingresar al sistema</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M5 12h14M14 7l5 5-5 5" />
+              </svg>
+            </button>
+          </form>
+
+          <div class="security-note">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M12 3 5 6v5c0 4.5 2.7 8.1 7 10 4.3-1.9 7-5.5 7-10V6l-7-3Z" />
+              <path d="m9.5 12 1.7 1.7 3.5-3.7" />
+            </svg>
+            <span>Sesión protegida y acceso exclusivo para el equipo Villa Hermosa.</span>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div id="app-view" class="app-shell is-sidebar-open" hidden>
+      <aside class="sidebar" aria-label="Navegación principal">
+        <div class="sidebar__brand">
+          <span class="sidebar__mark" aria-hidden="true">VH</span>
+          <img src="/assets/villa-hermosa-wordmark.png" alt="Villa Hermosa" />
+          <span class="sidebar__brand-label">Minutas</span>
+        </div>
+
+        <button
+          id="sidebar-toggle"
+          class="sidebar-toggle"
+          type="button"
+          aria-expanded="true"
+          aria-controls="sidebar-navigation"
+          aria-label="Contraer menú lateral"
+        >
+          <span class="sidebar-toggle__leading">
+            <span class="sidebar-toggle__icon" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </span>
+            <span class="sidebar-toggle__copy">
+              <small>Navegación</small>
+              <strong id="sidebar-current">Inicio</strong>
+            </span>
+          </span>
+          <span class="sidebar-toggle__action" aria-hidden="true">Cerrar</span>
+        </button>
+
+        <nav id="sidebar-navigation" class="sidebar__nav">
+          <button class="nav-item is-active" type="button" data-route="dashboard" aria-label="Inicio" title="Inicio">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" rx="2" />
+              <rect x="14" y="3" width="7" height="7" rx="2" />
+              <rect x="3" y="14" width="7" height="7" rx="2" />
+              <rect x="14" y="14" width="7" height="7" rx="2" />
+            </svg>
+            <span class="nav-item__copy"><strong>Inicio</strong><small>Resumen y actividad</small></span>
+          </button>
+          <button class="nav-item" type="button" data-route="minutes" aria-label="Minutas" title="Minutas">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M6 2h9l4 4v16H6z" />
+              <path d="M14 2v5h5M9 12h7M9 16h7" />
+            </svg>
+            <span class="nav-item__copy"><strong>Minutas</strong><small>Expedientes registrados</small></span>
+          </button>
+          <button class="nav-item" type="button" data-route="new-minute" aria-label="Nueva minuta" title="Nueva minuta">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <span class="nav-item__copy"><strong>Nueva minuta</strong><small>Crear documento</small></span>
+          </button>
+          <button class="nav-item admin-only" type="button" data-route="users" aria-label="Usuarios" title="Usuarios">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M19 8v6M16 11h6" />
+            </svg>
+            <span class="nav-item__copy"><strong>Usuarios</strong><small>Accesos del equipo</small></span>
+          </button>
+        </nav>
+
+        <div class="sidebar__footer">
+          <div class="sidebar__partner">
+            <img src="/assets/ayt-house-logo.png" alt="AYT House Inmobiliaria" />
+            <span><strong>A&amp;T House</strong><small>Gestión inmobiliaria</small></span>
+          </div>
+          <button id="logout-button" class="nav-item nav-item--muted" type="button" aria-label="Cerrar sesión" title="Cerrar sesión">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <path d="m16 17 5-5-5-5M21 12H9" />
+            </svg>
+            <span class="nav-item__copy"><strong>Cerrar sesión</strong><small>Finalizar acceso</small></span>
+          </button>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div>
+            <p id="topbar-kicker" class="topbar__kicker">Panel de gestión</p>
+            <h1 id="topbar-title">Inicio</h1>
+          </div>
+          <div class="topbar__actions">
+            <button
+              id="quick-create"
+              class="button button--primary topbar-create"
+              type="button"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <span>Nueva minuta</span>
+            </button>
+            <button
+              id="profile-button"
+              class="profile-chip"
+              type="button"
+              aria-label="Abrir cuenta del usuario actual"
+            >
+              <span id="profile-initials" class="profile-chip__avatar">VH</span>
+              <span class="profile-chip__copy">
+                <strong id="profile-name">Usuario</strong>
+                <small id="profile-role">Asesor</small>
+              </span>
+            </button>
+          </div>
+        </header>
+
+        <main id="main-content" class="main-content" tabindex="-1" aria-labelledby="topbar-title"></main>
+      </div>
+
+      <nav class="mobile-nav" aria-label="Navegación móvil">
+        <button class="mobile-nav__item is-active" type="button" data-route="dashboard">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" rx="2" />
+            <rect x="14" y="3" width="7" height="7" rx="2" />
+            <rect x="3" y="14" width="7" height="7" rx="2" />
+            <rect x="14" y="14" width="7" height="7" rx="2" />
+          </svg>
+          <span>Inicio</span>
+        </button>
+        <button class="mobile-nav__item" type="button" data-route="minutes">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M6 2h9l4 4v16H6z" />
+            <path d="M14 2v5h5M9 12h7" />
+          </svg>
+          <span>Minutas</span>
+        </button>
+        <button class="mobile-nav__item mobile-nav__item--create" type="button" data-route="new-minute">
+          <span class="mobile-nav__plus">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+          </span>
+          <span>Nueva</span>
+        </button>
+        <button class="mobile-nav__item admin-only" type="button" data-route="users">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+          </svg>
+          <span>Usuarios</span>
+        </button>
+        <button class="mobile-nav__item advisor-only" type="button" data-action="profile-menu">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21a8 8 0 0 1 16 0" />
+          </svg>
+          <span>Cuenta</span>
+        </button>
+      </nav>
+    </div>
+
+    <div id="modal-root"></div>
+    <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+    <noscript>Necesitas activar JavaScript para usar el generador de minutas.</noscript>
+    <script type="module" src="/app.js?v=20260824h"></script>
+  </body>
+</html>

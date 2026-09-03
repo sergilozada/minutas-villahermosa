@@ -1,0 +1,384 @@
+{
+  "version": "1.2.1",
+  "title": "Minuta financiada",
+  "description": "Formulario basado en la plantilla legal MINUTA FINANCIADO, con compradores múltiples y cronograma de pagos automático.",
+  "sections": [
+    {
+      "id": "buyer",
+      "step": 1,
+      "title": "Datos de los compradores",
+      "shortTitle": "Compradores",
+      "description": "Indica cuántas personas comprarán y registra a cada una exactamente como figura en su documento.",
+      "repeatable": true,
+      "payloadKey": "compradores",
+      "minItems": 1,
+      "maxItems": 10,
+      "countLabel": "Cantidad de compradores registrados",
+      "countHelp": "Puedes registrar hasta 10 compradores. Cada persona aparecerá en la minuta y en el cronograma.",
+      "fields": [
+        {
+          "id": "nombre_completo",
+          "label": "Nombres y apellidos",
+          "type": "text",
+          "required": true,
+          "fullWidth": true,
+          "autocomplete": "name",
+          "placeholder": "Ej. Ana Lucía Mendoza Rojas",
+          "help": "Usa el nombre legal completo, sin abreviaturas."
+        },
+        {
+          "id": "documento",
+          "label": "DNI",
+          "type": "text",
+          "required": true,
+          "validation": "dni",
+          "inputmode": "numeric",
+          "maxlength": 8,
+          "placeholder": "8 dígitos"
+        },
+        {
+          "id": "genero",
+          "label": "Género gramatical",
+          "type": "select",
+          "required": true,
+          "default": "femenino",
+          "options": [
+            { "value": "femenino", "label": "Femenino" },
+            { "value": "masculino", "label": "Masculino" }
+          ],
+          "help": "Se usa para la concordancia «identificada/o» en la minuta."
+        },
+        {
+          "id": "nacionalidad",
+          "label": "Nacionalidad",
+          "type": "text",
+          "required": true,
+          "default": "Peruana",
+          "placeholder": "Ej. Peruana"
+        },
+        {
+          "id": "ocupacion",
+          "label": "Profesión u ocupación",
+          "type": "text",
+          "required": true,
+          "placeholder": "Ej. Contadora"
+        },
+        {
+          "id": "estado_civil",
+          "label": "Estado civil",
+          "type": "select",
+          "required": true,
+          "options": [
+            { "value": "soltera", "label": "Soltera" },
+            { "value": "soltero", "label": "Soltero" },
+            { "value": "casada", "label": "Casada" },
+            { "value": "casado", "label": "Casado" },
+            { "value": "divorciada", "label": "Divorciada" },
+            { "value": "divorciado", "label": "Divorciado" },
+            { "value": "viuda", "label": "Viuda" },
+            { "value": "viudo", "label": "Viudo" }
+          ],
+          "help": "Si seleccionas casado/a, verifica con asesoría legal si debe intervenir el cónyuge."
+        },
+        {
+          "id": "email",
+          "label": "Correo electrónico",
+          "type": "email",
+          "required": true,
+          "fullWidth": true,
+          "autocomplete": "email",
+          "placeholder": "cliente@correo.com",
+          "help": "La cláusula décimo segunda exige una dirección vigente. Se guarda en el expediente."
+        },
+        {
+          "id": "telefono",
+          "label": "Teléfono",
+          "type": "tel",
+          "autocomplete": "tel",
+          "inputmode": "tel",
+          "placeholder": "Ej. 987 654 321"
+        },
+        {
+          "id": "domicilio",
+          "label": "Domicilio",
+          "type": "text",
+          "required": true,
+          "fullWidth": true,
+          "autocomplete": "street-address",
+          "placeholder": "Calle, avenida, número y referencia"
+        },
+        {
+          "id": "distrito",
+          "label": "Distrito",
+          "type": "text",
+          "required": true,
+          "autocomplete": "address-level3"
+        },
+        {
+          "id": "provincia",
+          "label": "Provincia",
+          "type": "text",
+          "required": true,
+          "autocomplete": "address-level2"
+        },
+        {
+          "id": "departamento",
+          "label": "Departamento",
+          "type": "text",
+          "required": true,
+          "autocomplete": "address-level1"
+        }
+      ]
+    },
+    {
+      "id": "property",
+      "step": 2,
+      "title": "Datos del inmueble",
+      "shortTitle": "Inmueble",
+      "description": "Verifica que lote, manzana y área correspondan al mismo registro comercial.",
+      "fields": [
+        {
+          "id": "lote",
+          "label": "Lote",
+          "type": "text",
+          "required": true,
+          "placeholder": "Ej. 12"
+        },
+        {
+          "id": "manzana",
+          "label": "Manzana",
+          "type": "text",
+          "required": true,
+          "placeholder": "Ej. B"
+        },
+        {
+          "id": "area_m2",
+          "label": "Área del lote",
+          "type": "number",
+          "required": true,
+          "min": 1,
+          "step": "0.01",
+          "suffix": "m²",
+          "placeholder": "120.00"
+        }
+      ]
+    },
+    {
+      "id": "payment",
+      "step": 3,
+      "title": "Precio y pago inicial",
+      "shortTitle": "Operación",
+      "description": "Registra uno o varios pagos de la cuota inicial; el sistema comprobará que la suma coincida exactamente.",
+      "fields": [
+        {
+          "id": "precio_total",
+          "label": "Precio total",
+          "type": "number",
+          "required": true,
+          "min": 0,
+          "max": 999999999.99,
+          "step": "0.01",
+          "prefix": "S/",
+          "placeholder": "0.00"
+        },
+        {
+          "id": "cuota_inicial",
+          "label": "Cuota inicial",
+          "type": "number",
+          "required": true,
+          "min": 0,
+          "max": 999999999.99,
+          "step": "0.01",
+          "prefix": "S/",
+          "placeholder": "0.00"
+        },
+        {
+          "id": "total_pagos_iniciales",
+          "label": "Total de pagos registrados",
+          "type": "number",
+          "computed": true,
+          "prefix": "S/",
+          "help": "Debe coincidir con la cuota inicial antes de generar la minuta."
+        },
+        {
+          "id": "pago_inicial_confirmado",
+          "label": "Confirmo que todos los pagos iniciales registrados ya fueron efectuados",
+          "type": "checkbox",
+          "required": true,
+          "fullWidth": true,
+          "help": "La minuta afirmará que estos abonos ya fueron realizados. No generes el documento si alguno sigue pendiente."
+        },
+        {
+          "id": "fecha_firma",
+          "label": "Fecha de firma",
+          "type": "date",
+          "required": true
+        }
+      ],
+      "groups": [
+        {
+          "id": "initial_payments",
+          "payloadKey": "pagos_iniciales",
+          "repeatable": true,
+          "title": "Pagos de la cuota inicial",
+          "itemLabel": "Pago",
+          "afterField": "cuota_inicial",
+          "minItems": 1,
+          "maxItems": 20,
+          "countLabel": "Cantidad de pagos realizados",
+          "countHelp": "Registra cada abono por separado. Por ejemplo, una inicial de S/ 2,000 puede contener cuatro pagos de S/ 500.",
+          "fields": [
+            {
+              "id": "metodo",
+              "label": "Método de pago",
+              "type": "select",
+              "required": true,
+              "options": [
+                { "value": "yape", "label": "Yape" },
+                { "value": "plin", "label": "Plin" },
+                { "value": "deposito_cuenta", "label": "Depósito a cuenta" },
+                { "value": "transferencia_bancaria", "label": "Transferencia bancaria" },
+                { "value": "transferencia_interbancaria", "label": "Transferencia interbancaria" }
+              ]
+            },
+            {
+              "id": "monto",
+              "label": "Monto pagado",
+              "type": "number",
+              "required": true,
+              "min": 0.01,
+              "max": 999999999.99,
+              "step": "0.01",
+              "prefix": "S/",
+              "placeholder": "500.00"
+            },
+            {
+              "id": "numero_operacion",
+              "label": "Número de operación",
+              "type": "text",
+              "required": true,
+              "maxlength": 80,
+              "placeholder": "Código que figura en el comprobante"
+            },
+            {
+              "id": "fecha_pago",
+              "label": "Fecha del pago",
+              "type": "date",
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "financing",
+      "step": 4,
+      "title": "Financiamiento y revisión",
+      "shortTitle": "Financiamiento",
+      "description": "Ingresa el total pactado; las cuotas regulares y la cuota final se reconcilian automáticamente.",
+      "fields": [
+        {
+          "id": "saldo_financiado",
+          "label": "Saldo financiado",
+          "type": "number",
+          "computed": true,
+          "prefix": "S/",
+          "help": "Precio total menos cuota inicial."
+        },
+        {
+          "id": "numero_cuotas_total",
+          "label": "Total de cuotas (incluye la cuota final)",
+          "type": "number",
+          "required": true,
+          "integer": true,
+          "min": 1,
+          "max": 121,
+          "step": "1",
+          "placeholder": "83",
+          "help": "Ejemplo: 83 cuotas totales equivalen a 82 cuotas regulares y 1 cuota final."
+        },
+        {
+          "id": "numero_cuotas_regulares",
+          "label": "Cantidad de cuotas regulares",
+          "type": "number",
+          "computed": true,
+          "help": "Total de cuotas menos una cuota final."
+        },
+        {
+          "id": "monto_cuota_regular",
+          "label": "Monto de cada cuota regular",
+          "type": "number",
+          "required": true,
+          "min": 0,
+          "max": 999999999.99,
+          "step": "0.01",
+          "prefix": "S/",
+          "placeholder": "0.00",
+          "help": "Se calcula como saldo financiado entre el total de cuotas. Puedes modificarlo; la cuota final absorberá la diferencia."
+        },
+        {
+          "id": "monto_cuota_final",
+          "label": "Cuota final",
+          "type": "number",
+          "computed": true,
+          "prefix": "S/",
+          "help": "Ajuste final para que la suma coincida exactamente con el saldo."
+        },
+        {
+          "id": "fecha_primera_cuota",
+          "label": "Primera fecha de vencimiento",
+          "type": "date",
+          "required": true,
+          "help": "A partir de esta fecha se calculan automáticamente los vencimientos mensuales del cronograma."
+        },
+        {
+          "id": "revision_confirmada",
+          "label": "He revisado los datos del cliente, lote, importes y condiciones",
+          "type": "checkbox",
+          "required": true,
+          "fullWidth": true,
+          "help": "La generación quedará registrada a nombre del usuario actual."
+        }
+      ]
+    }
+  ],
+  "generationRequiredFields": [
+    "lote",
+    "manzana",
+    "area_m2",
+    "precio_total",
+    "cuota_inicial",
+    "pago_inicial_confirmado",
+    "fecha_firma",
+    "numero_cuotas_total",
+    "monto_cuota_regular",
+    "fecha_primera_cuota",
+    "revision_confirmada"
+  ],
+  "bindings": [
+    { "token": "{{PROPERTY_LOT}}", "field": "lote", "transform": "uppercase" },
+    { "token": "{{PROPERTY_BLOCK}}", "field": "manzana", "transform": "uppercase" },
+    { "token": "{{PROPERTY_AREA}}", "field": "area_m2" },
+    { "token": "{{TOTAL_AMOUNT}}", "field": "precio_total", "transform": "amount_number" },
+    { "token": "{{TOTAL_WORDS}}", "field": "precio_total", "transform": "amount_integer_words_upper" },
+    { "token": "{{TOTAL_CENTS}}", "field": "precio_total", "transform": "amount_cents" },
+    { "token": "{{INITIAL_AMOUNT}}", "field": "cuota_inicial", "transform": "amount_number" },
+    { "token": "{{INITIAL_WORDS}}", "field": "cuota_inicial", "transform": "amount_integer_words_upper" },
+    { "token": "{{INITIAL_CENTS}}", "field": "cuota_inicial", "transform": "amount_cents" },
+    { "token": "{{BALANCE_AMOUNT}}", "field": "saldo_financiado", "transform": "amount_number" },
+    { "token": "{{BALANCE_WORDS}}", "field": "saldo_financiado", "transform": "amount_integer_words_upper" },
+    { "token": "{{BALANCE_CENTS}}", "field": "saldo_financiado", "transform": "amount_cents" },
+      { "token": "{{INSTALLMENTS_TOTAL}}", "field": "numero_cuotas_total", "transform": "integer" },
+    { "token": "{{INSTALLMENTS_TOTAL_WORDS}}", "field": "numero_cuotas_total", "transform": "integer_words_upper" },
+    { "token": "{{INSTALLMENTS_REGULAR_COUNT}}", "field": "numero_cuotas_regulares", "transform": "integer" },
+    { "token": "{{INSTALLMENT_REGULAR_AMOUNT}}", "field": "monto_cuota_regular", "transform": "amount_number" },
+    { "token": "{{INSTALLMENT_REGULAR_WORDS}}", "field": "monto_cuota_regular", "transform": "amount_integer_words_upper" },
+    { "token": "{{INSTALLMENT_REGULAR_CENTS}}", "field": "monto_cuota_regular", "transform": "amount_cents" },
+    { "token": "{{INSTALLMENT_FINAL_AMOUNT}}", "field": "monto_cuota_final", "transform": "amount_number" },
+    { "token": "{{INSTALLMENT_FINAL_WORDS}}", "field": "monto_cuota_final", "transform": "amount_integer_words_upper" },
+    { "token": "{{INSTALLMENT_FINAL_CENTS}}", "field": "monto_cuota_final", "transform": "amount_cents" },
+    { "token": "{{SIGNATURE_DAY}}", "field": "fecha_firma", "transform": "date_day" },
+    { "token": "{{SIGNATURE_MONTH}}", "field": "fecha_firma", "transform": "date_month" },
+    { "token": "{{SIGNATURE_YEAR}}", "field": "fecha_firma", "transform": "date_year" }
+  ]
+}
