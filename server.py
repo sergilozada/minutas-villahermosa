@@ -7,7 +7,9 @@ from backend.config import (
     ADMIN_PASSWORD,
     ASESOR_PASSWORD,
     COOKIE_SECURE,
+    DATABASE_URL,
     HOST,
+    IS_HOSTED,
     PORT,
     ensure_runtime_dirs,
 )
@@ -29,7 +31,9 @@ def _local_binding(host: str) -> bool:
 
 
 def validate_runtime_security() -> None:
-    if _local_binding(HOST):
+    if IS_HOSTED and not DATABASE_URL:
+        raise RuntimeError("El alojamiento web requiere DATABASE_URL; no se permite SQLite efímero.")
+    if _local_binding(HOST) and not IS_HOSTED:
         return
     if not COOKIE_SECURE:
         raise RuntimeError(
@@ -41,15 +45,23 @@ def validate_runtime_security() -> None:
         )
 
 
+def create_database():
+    if DATABASE_URL:
+        from backend.database_postgres import PostgresDatabase
+
+        return PostgresDatabase(DATABASE_URL)
+    ensure_runtime_dirs()
+    return Database()
+
+
 def main() -> None:
     validate_runtime_security()
-    ensure_runtime_dirs()
-    database = Database()
+    database = create_database()
     generated_credentials = database.initialize()
     VillaHermosaHandler.database = database
     server = VillaHermosaServer((HOST, PORT), VillaHermosaHandler)
     print(f"Villa Hermosa Minutas disponible en http://{HOST}:{PORT}")
-    if generated_credentials:
+    if generated_credentials and not IS_HOSTED:
         print("\nCredenciales creadas para este primer arranque:")
         for credential in generated_credentials:
             print(

@@ -17,12 +17,15 @@ TEMPLATE_PATH = Path(
 )
 SCHEMA_PATH = CONFIG_DIR / "minute_schema.json"
 
-HOST = os.getenv("VH_HOST", "127.0.0.1")
-PORT = int(os.getenv("VH_PORT", "8000"))
-SESSION_TTL_SECONDS = int(os.getenv("VH_SESSION_TTL_SECONDS", str(60 * 60 * 10)))
 IS_VERCEL = bool(os.getenv("VERCEL"))
+IS_CLOUD_RUN = bool(os.getenv("K_SERVICE"))
+IS_RENDER = os.getenv("RENDER", "").lower() == "true"
+IS_HOSTED = IS_VERCEL or IS_CLOUD_RUN or IS_RENDER
+HOST = os.getenv("VH_HOST", "0.0.0.0" if IS_HOSTED else "127.0.0.1")
+PORT = int(os.getenv("PORT") or os.getenv("VH_PORT", "8000"))
+SESSION_TTL_SECONDS = int(os.getenv("VH_SESSION_TTL_SECONDS", str(60 * 60 * 10)))
 COOKIE_SECURE = os.getenv(
-    "VH_COOKIE_SECURE", "1" if IS_VERCEL else "0"
+    "VH_COOKIE_SECURE", "1" if IS_HOSTED else "0"
 ) == "1"
 SESSION_COOKIE = "__Host-vh_session" if COOKIE_SECURE else "vh_session"
 MAX_JSON_BYTES = 2 * 1024 * 1024

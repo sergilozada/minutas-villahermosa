@@ -1,0 +1,17 @@
+**
+!Dockerfile
+!requirements.txt
+!server.py
+!backend/
+!backend/**
+!config/
+!config/**
+!static/
+!static/**
+!templates/
+!templates/**
+**/__pycache__/
+**/*.pyc
+**/.env*
+**/*.db
+**/*.sqlite*
