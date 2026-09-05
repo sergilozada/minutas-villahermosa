@@ -1,0 +1,25 @@
+# Preview only: Free can sleep or be suspended. Data stays in separate Supabase.
+services:
+  - type: web
+    name: minutas-villahermosa
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: main
+    autoDeployTrigger: "off"
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: VH_ADMIN_EMAIL
+        sync: false
+      - key: VH_ADMIN_PASSWORD
+        generateValue: true
+      - key: VH_ASESOR_EMAIL
+        value: asesor@villahermosa.com
+      - key: VH_ASESOR_PASSWORD
+        generateValue: true
+      - key: VH_HOST
+        value: 0.0.0.0
+      - key: VH_COOKIE_SECURE
+        value: "1"

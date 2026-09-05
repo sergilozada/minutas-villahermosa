@@ -98,6 +98,15 @@ El contenedor incluido admite Cloud Run y Render. En ambos casos utiliza `DATABA
 
 No se activa un plan de pago automáticamente.
 
+### Vista previa en Render Free
+
+`render.yaml` define un único servicio **Free**, sin discos ni bases Render adicionales,
+y con despliegues automáticos desactivados. Al crear el Blueprint, configura
+`DATABASE_URL` (Supabase con SSL) y `VH_ADMIN_EMAIL`. Render genera contraseñas
+independientes y aleatorias para administrador y asesor; consérvalas en un gestor
+de contraseñas desde la sección privada **Environment**. No se imprimen en los logs
+ni se guardan en Git. Configura acceso de GitHub solo a este repositorio.
+
 ### Entrada alternativa para Vercel
 
 1. Crea un proyecto de Supabase y ejecuta la migración de `supabase/migrations/`.

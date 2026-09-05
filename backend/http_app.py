@@ -16,6 +16,7 @@ from urllib.parse import unquote, urlparse
 
 from .config import (
     COOKIE_SECURE,
+    IS_RENDER,
     IS_VERCEL,
     MAX_JSON_BYTES,
     MAX_MINUTES_PER_USER,
@@ -298,11 +299,15 @@ class VillaHermosaHandler(BaseHTTPRequestHandler):
         )
 
     def _client_ip(self) -> str:
-        raw = (
-            self.headers.get("X-Vercel-Forwarded-For", "")
-            if IS_VERCEL
-            else self.client_address[0]
-        )
+        if IS_VERCEL:
+            raw = self.headers.get("X-Vercel-Forwarded-For", "")
+        elif IS_RENDER:
+            # Render's public edge overwrites this header; X-Forwarded-For can
+            # contain caller-supplied entries and must not key the limiter.
+            values = self.headers.get_all("CF-Connecting-IP", [])
+            raw = values[0] if len(values) == 1 else ""
+        else:
+            raw = self.client_address[0]
         try:
             return str(ipaddress.ip_address(raw.strip()))
         except ValueError:
