@@ -34,7 +34,7 @@ El proyecto funciona con SQLite durante el desarrollo local y utiliza Supabase P
 
 ## Sitio web
 
-El alojamiento está pendiente de seleccionar y publicar. La URL definitiva se incorpora aquí después de comprobar el primer despliegue. El panel principal se encuentra en [Condominio Villa Hermosa](https://condominio-villa-hermosa.web.app); su base Firebase es independiente de Minutas.
+La vista previa está publicada en [Minutas Villa Hermosa](https://minutas-villahermosa.onrender.com/). El panel principal se encuentra en [Condominio Villa Hermosa](https://condominio-villa-hermosa.web.app); su base Firebase es independiente de Minutas.
 
 ## Repositorio
 
