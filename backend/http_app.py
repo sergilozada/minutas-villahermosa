@@ -15,7 +15,10 @@ from typing import Any
 from urllib.parse import unquote, urlparse
 
 from .config import (
+    COOKIE_PARTITIONED,
+    COOKIE_SAME_SITE,
     COOKIE_SECURE,
+    FRAME_ANCESTORS,
     IS_RENDER,
     IS_VERCEL,
     MAX_JSON_BYTES,
@@ -441,8 +444,10 @@ class VillaHermosaHandler(BaseHTTPRequestHandler):
         )
 
     def _security_headers(self) -> None:
+        frame_ancestors = " ".join(FRAME_ANCESTORS) if FRAME_ANCESTORS else "'none'"
         self.send_header("X-Content-Type-Options", "nosniff")
-        self.send_header("X-Frame-Options", "DENY")
+        if not FRAME_ANCESTORS:
+            self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
         if COOKIE_SECURE:
@@ -454,7 +459,7 @@ class VillaHermosaHandler(BaseHTTPRequestHandler):
             "Content-Security-Policy",
             "default-src 'self'; img-src 'self' data:; style-src 'self'; "
             "script-src 'self'; connect-src 'self'; object-src 'none'; "
-            "base-uri 'self'; frame-ancestors 'none'",
+            f"base-uri 'self'; frame-ancestors {frame_ancestors}",
         )
 
     def _set_session_cookie(self, token: str) -> None:
@@ -462,11 +467,13 @@ class VillaHermosaHandler(BaseHTTPRequestHandler):
             f"{SESSION_COOKIE}={token}",
             "Path=/",
             "HttpOnly",
-            "SameSite=Lax",
+            f"SameSite={COOKIE_SAME_SITE}",
             f"Max-Age={SESSION_TTL_SECONDS}",
         ]
         if COOKIE_SECURE:
             parts.append("Secure")
+        if COOKIE_PARTITIONED:
+            parts.append("Partitioned")
         self._pending_cookie = "; ".join(parts)
 
     def _clear_session_cookie(self) -> None:
@@ -474,11 +481,13 @@ class VillaHermosaHandler(BaseHTTPRequestHandler):
             f"{SESSION_COOKIE}=",
             "Path=/",
             "HttpOnly",
-            "SameSite=Lax",
+            f"SameSite={COOKIE_SAME_SITE}",
             "Max-Age=0",
         ]
         if COOKIE_SECURE:
             parts.append("Secure")
+        if COOKIE_PARTITIONED:
+            parts.append("Partitioned")
         self._pending_cookie = "; ".join(parts)
 
     def _flush_pending_cookie(self) -> None:

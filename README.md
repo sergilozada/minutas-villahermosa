@@ -47,7 +47,7 @@ Reducir el tiempo y los errores al preparar contratos financiados, centralizar l
 ## Arquitectura
 
 ```text
-Navegador
+Panel Firebase ── sección Minutas (iframe autorizado)
    │
    ▼
 Alojamiento Python HTTPS ── interfaz + API + generación DOCX
@@ -88,7 +88,8 @@ El contenedor incluido admite Cloud Run y Render. En ambos casos utiliza `DATABA
 4. Despliega usando `Dockerfile`, puerto 8080 y comprobación de salud `/api/health`.
 5. El primer arranque crea el esquema privado con RLS y únicamente las cuentas que aún no existen. No migra clientes ni sobrescribe contraseñas existentes.
 6. Comprueba login, permisos y generación DOCX con datos ficticios antes de usarlo.
-7. Configura **solo la URL HTTPS pública** en `VITE_MINUTAS_SERVICE_URL` del panel React y recompílalo. El acceso se abre en otra pestaña; la política de seguridad impide incrustar el servicio remoto en un iframe.
+7. Configura **solo la URL HTTPS pública** en `VITE_MINUTAS_SERVICE_URL` del panel React y recompílalo.
+8. Configura `VH_FRAME_ANCESTORS` con el origen HTTPS exacto del panel. La aplicación se integra en esa sección mediante un `iframe`; ningún otro sitio queda autorizado a incrustarla.
 
 ### Costes y disponibilidad
 
@@ -124,6 +125,7 @@ VH_ADMIN_PASSWORD=<secreto-unico-de-16-o-mas-caracteres>
 VH_ASESOR_EMAIL=<correo-asesor-autorizado>
 VH_ASESOR_PASSWORD=<otro-secreto-unico-de-16-o-mas-caracteres>
 VH_COOKIE_SECURE=1
+VH_FRAME_ANCESTORS=https://dominio-exacto-del-panel.example
 ```
 
 No guardes valores reales en `.env.example`, commits, capturas ni logs. `DATABASE_URL` y las contraseñas deben existir únicamente como secretos del proveedor y, si se necesita una copia local, en un archivo ignorado por Git.

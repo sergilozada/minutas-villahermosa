@@ -23,3 +23,5 @@ services:
         value: 0.0.0.0
       - key: VH_COOKIE_SECURE
         value: "1"
+      - key: VH_FRAME_ANCESTORS
+        value: https://condominio-villa-hermosa.web.app

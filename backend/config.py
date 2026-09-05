@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -28,6 +30,33 @@ COOKIE_SECURE = os.getenv(
     "VH_COOKIE_SECURE", "1" if IS_HOSTED else "0"
 ) == "1"
 SESSION_COOKIE = "__Host-vh_session" if COOKIE_SECURE else "vh_session"
+
+
+def _parse_frame_ancestors(value: str) -> tuple[str, ...]:
+    """Return a CSP-safe list of exact HTTPS origins allowed to frame the app."""
+    origins: list[str] = []
+    for candidate in value.split():
+        parsed = urlsplit(candidate)
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.path not in {"", "/"}
+            or parsed.query
+            or parsed.fragment
+            or not re.fullmatch(r"[A-Za-z0-9.-]+(?::[0-9]{1,5})?", parsed.netloc)
+        ):
+            continue
+        origin = f"https://{parsed.netloc.lower()}"
+        if origin not in origins:
+            origins.append(origin)
+    return tuple(origins)
+
+
+FRAME_ANCESTORS = _parse_frame_ancestors(os.getenv("VH_FRAME_ANCESTORS", ""))
+COOKIE_PARTITIONED = bool(FRAME_ANCESTORS) and COOKIE_SECURE
+COOKIE_SAME_SITE = "None" if COOKIE_PARTITIONED else "Lax"
 MAX_JSON_BYTES = 2 * 1024 * 1024
 MAX_MINUTES_PER_USER = int(os.getenv("VH_MAX_MINUTES_PER_USER", "5000"))
 
