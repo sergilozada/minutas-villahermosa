@@ -30,10 +30,7 @@ const elements = {
   title: document.querySelector("#topbar-title"),
   kicker: document.querySelector("#topbar-kicker"),
   profileName: document.querySelector("#profile-name"),
-  profileRole: document.querySelector("#profile-role"),
-  profileInitials: document.querySelector("#profile-initials"),
   profileButton: document.querySelector("#profile-button"),
-  quickCreate: document.querySelector("#quick-create"),
   sidebarToggle: document.querySelector("#sidebar-toggle"),
   sidebarCurrent: document.querySelector("#sidebar-current"),
   logout: document.querySelector("#logout-button"),
@@ -81,7 +78,6 @@ async function initialize() {
 function bindStaticEvents() {
   elements.loginForm.addEventListener("submit", handleLogin);
   elements.togglePassword.addEventListener("click", togglePasswordVisibility);
-  elements.quickCreate.addEventListener("click", requestStartNewMinute);
   elements.sidebarToggle.addEventListener("click", toggleSidebar);
   elements.profileButton.addEventListener("click", openAccountModal);
   elements.logout.addEventListener("click", requestLogout);
@@ -232,10 +228,9 @@ function resetSessionState() {
 }
 
 function hydrateProfile() {
-  const name = state.user.display_name || state.user.email;
-  elements.profileName.textContent = name;
-  elements.profileRole.textContent = state.user.role === "admin" ? "Administrador" : "Asesor";
-  elements.profileInitials.textContent = initials(name);
+  const roleLabel = state.user.role === "admin" ? "Admin" : "Asesor";
+  elements.profileName.textContent = roleLabel;
+  elements.profileButton.setAttribute("aria-label", `Abrir cuenta de ${roleLabel}`);
 }
 
 async function performLogout() {

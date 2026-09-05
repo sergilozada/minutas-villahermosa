@@ -949,22 +949,24 @@ body.is-authenticated .skip-link {
 }
 
 .profile-chip {
-  min-height: 48px;
-  display: flex;
+  min-height: 38px;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 5px 10px 5px 5px;
-  background: rgb(255 254 251 / 76%);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  gap: 8px;
+  padding: 0 12px;
+  color: var(--navy-950);
+  background: var(--teal-50);
+  border: 1px solid #c7ddd9;
+  border-radius: 999px;
   cursor: pointer;
-  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 760;
   transition: background 160ms var(--ease), border-color 160ms var(--ease),
     transform 160ms var(--ease);
 }
 
 .profile-chip:hover {
-  background: var(--paper);
+  background: #dff2ef;
   border-color: var(--teal-300);
   transform: translateY(-1px);
 }
@@ -973,37 +975,12 @@ body.is-authenticated .skip-link {
   transform: scale(0.98);
 }
 
-.profile-chip__avatar {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  color: white;
-  background: linear-gradient(145deg, var(--teal-600), var(--navy-800));
-  border-radius: 10px;
-  font-size: 0.72rem;
-  font-weight: 850;
-  letter-spacing: 0.04em;
-}
-
-.profile-chip__copy {
-  display: grid;
-  line-height: 1.2;
-}
-
-.profile-chip__copy strong {
-  max-width: 160px;
-  overflow: hidden;
-  color: var(--navy-800);
-  font-size: 0.78rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.profile-chip__copy small {
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 0.68rem;
+.profile-chip__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  background: var(--teal-700);
+  border-radius: 50%;
 }
 
 .main-content {
@@ -2259,23 +2236,9 @@ body.is-authenticated .skip-link {
       max(18px, env(safe-area-inset-left));
   }
 
-  .topbar-create,
-  .profile-chip__copy {
-    display: none;
-  }
-
   .profile-chip {
-    min-width: 44px;
     min-height: 44px;
-    justify-content: center;
-    padding: 3px;
-    background: transparent;
-    border: 0;
-  }
-
-  .profile-chip__avatar {
-    width: 38px;
-    height: 38px;
+    padding-inline: 13px;
   }
 
   .main-content {

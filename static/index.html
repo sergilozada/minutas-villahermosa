@@ -10,7 +10,7 @@
     />
     <link rel="icon" type="image/png" href="/assets/villa-hermosa-icon.png" />
     <link rel="apple-touch-icon" href="/assets/villa-hermosa-icon.png" />
-    <link rel="stylesheet" href="/styles.css?v=20260905a" />
+    <link rel="stylesheet" href="/styles.css?v=20260905b" />
     <title>Minutas Villa Hermosa</title>
   </head>
   <body>
@@ -224,26 +224,13 @@
           </div>
           <div class="topbar__actions">
             <button
-              id="quick-create"
-              class="button button--primary topbar-create"
-              type="button"
-            >
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              <span>Nueva minuta</span>
-            </button>
-            <button
               id="profile-button"
               class="profile-chip"
               type="button"
               aria-label="Abrir cuenta del usuario actual"
             >
-              <span id="profile-initials" class="profile-chip__avatar">VH</span>
-              <span class="profile-chip__copy">
-                <strong id="profile-name">Usuario</strong>
-                <small id="profile-role">Asesor</small>
-              </span>
+              <span class="profile-chip__dot" aria-hidden="true"></span>
+              <strong id="profile-name">Admin</strong>
             </button>
           </div>
         </header>
@@ -288,6 +275,6 @@
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
     <noscript>Necesitas activar JavaScript para usar el generador de minutas.</noscript>
-    <script type="module" src="/app.js?v=20260905a"></script>
+    <script type="module" src="/app.js?v=20260905b"></script>
   </body>
 </html>
