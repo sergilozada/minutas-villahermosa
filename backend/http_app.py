@@ -275,12 +275,6 @@ class VillaHermosaHandler(BaseHTTPRequestHandler):
             )
             return
         password = str(body.get("password", ""))
-        if not email.endswith("@villahermosa.com"):
-            self._json_error(
-                HTTPStatus.UNAUTHORIZED,
-                "Usa una cuenta autorizada de Villa Hermosa.",
-            )
-            return
         user = self.database.get_user_by_email(email)
         if not user or not verify_password(
             password, user["password_salt"], user["password_hash"]

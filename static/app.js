@@ -115,8 +115,8 @@ async function handleLogin(event) {
   const password = elements.loginPassword.value;
   let valid = true;
 
-  if (!email || !/^[^\s@]+@villahermosa\.com$/i.test(email)) {
-    setLoginFieldError("email", "Ingresa un correo @villahermosa.com válido.");
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(email)) {
+    setLoginFieldError("email", "Ingresa un correo electrónico válido.");
     valid = false;
   }
   if (!password) {

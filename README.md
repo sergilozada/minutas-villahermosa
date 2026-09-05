@@ -10,7 +10,7 @@ El proyecto funciona con SQLite durante el desarrollo local y utiliza Supabase P
 
 ## Funcionalidades principales
 
-- Inicio de sesión corporativo con roles `admin` y `asesor`.
+- Inicio de sesión con cuentas autorizadas y roles `admin` y `asesor`.
 - Acceso del administrador a todos los expedientes y acceso del asesor únicamente a los suyos.
 - Registro de 1 a 10 compradores con identidad, ocupación, estado civil, domicilio y contacto.
 - Formulario guiado con validación inmediata y guardado de borradores.
@@ -90,9 +90,9 @@ Variables requeridas en producción:
 
 ```dotenv
 DATABASE_URL=<conexion-pooler-suministrada-por-supabase>
-VH_ADMIN_EMAIL=admin@villahermosa.com
+VH_ADMIN_EMAIL=<correo-administrador-autorizado>
 VH_ADMIN_PASSWORD=<secreto-unico-de-16-o-mas-caracteres>
-VH_ASESOR_EMAIL=asesor@villahermosa.com
+VH_ASESOR_EMAIL=<correo-asesor-autorizado>
 VH_ASESOR_PASSWORD=<otro-secreto-unico-de-16-o-mas-caracteres>
 VH_COOKIE_SECURE=1
 ```

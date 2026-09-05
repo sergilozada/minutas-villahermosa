@@ -604,6 +604,31 @@ class ApplicationSmokeTest(unittest.TestCase):
         self.assertEqual(status, 200)
         return opener, body["csrfToken"]
 
+    def test_authorized_email_outside_corporate_domain_can_login(self) -> None:
+        email = "inmobiliariaathouse@gmail.com"
+        password = "ClaveDePruebaSegura-2026"
+        with self.database.connect() as connection:
+            self.database._seed_user(
+                connection,
+                email,
+                "Administración A&T House",
+                "admin",
+                password,
+            )
+
+        opener = build_opener(HTTPCookieProcessor(CookieJar()))
+        LOGIN_LIMITER.reset("ip:127.0.0.1")
+        LOGIN_LIMITER.reset(f"account:{email}")
+        status, body, _ = self.request(
+            opener,
+            "POST",
+            "/api/login",
+            {"email": email, "password": password},
+        )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(body["user"]["email"], email)
+
     def test_roles_csrf_validation_and_docx_generation(self) -> None:
         admin, admin_csrf = self.login("Administrador")
         advisor, advisor_csrf = self.login("Asesor")
