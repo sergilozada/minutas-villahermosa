@@ -4,7 +4,6 @@ const state = {
   schema: null,
   minutes: [],
   stats: { total: 0, borradores: 0, generadas: 0 },
-  users: [],
   route: "dashboard",
   editingId: null,
   payload: {},
@@ -56,7 +55,6 @@ const icons = {
   info: '<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg>',
   warning: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>',
   shield: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 2.7 8.1 7 10 4.3-1.9 7-5.5 7-10V6l-7-3Z"/><path d="m9.5 12 1.7 1.7 3.5-3.7"/></svg>',
-  users: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg>',
   logout: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg>',
 };
 
@@ -64,7 +62,6 @@ const routeMeta = {
   dashboard: { title: "Inicio", kicker: "Panel de gestión" },
   minutes: { title: "Minutas", kicker: "Expedientes y documentos" },
   "new-minute": { title: "Nueva minuta", kicker: "Plantilla financiada" },
-  users: { title: "Usuarios", kicker: "Administración" },
 };
 
 document.addEventListener("DOMContentLoaded", initialize);
@@ -187,14 +184,14 @@ async function enterApplication() {
   hydrateProfile();
   renderLoading();
   try {
-    const requests = [api("/api/schema"), api("/api/minutes"), api("/api/stats")];
-    if (state.user.role === "admin") requests.push(api("/api/users"));
-    const [schema, minutesResponse, stats, usersResponse] = await Promise.all(requests);
+    const [schema, minutesResponse, stats] = await Promise.all([
+      api("/api/schema"),
+      api("/api/minutes"),
+      api("/api/stats"),
+    ]);
     state.schema = schema;
     state.minutes = minutesResponse.items || [];
     state.stats = stats;
-    state.users = usersResponse?.items || [];
-    applyRoleVisibility();
     navigate("dashboard");
   } catch (error) {
     renderFatalError(error.message);
@@ -220,7 +217,6 @@ function resetSessionState() {
     schema: null,
     minutes: [],
     stats: { total: 0, borradores: 0, generadas: 0 },
-    users: [],
     route: "dashboard",
     editingId: null,
     payload: {},
@@ -240,12 +236,6 @@ function hydrateProfile() {
   elements.profileName.textContent = name;
   elements.profileRole.textContent = state.user.role === "admin" ? "Administrador" : "Asesor";
   elements.profileInitials.textContent = initials(name);
-}
-
-function applyRoleVisibility() {
-  const isAdmin = state.user.role === "admin";
-  document.querySelectorAll(".admin-only").forEach((item) => (item.hidden = !isAdmin));
-  document.querySelectorAll(".advisor-only").forEach((item) => (item.hidden = isAdmin));
 }
 
 async function performLogout() {
@@ -301,7 +291,6 @@ function requestNavigation(route) {
 }
 
 function navigate(route, options = {}) {
-  if (route === "users" && state.user.role !== "admin") route = "dashboard";
   state.route = route;
   const meta = routeMeta[route] || routeMeta.dashboard;
   elements.title.textContent = meta.title;
@@ -313,7 +302,6 @@ function navigate(route, options = {}) {
   if (route === "dashboard") renderDashboard();
   if (route === "minutes") renderMinutes();
   if (route === "new-minute") renderWizard();
-  if (route === "users") renderUsers();
   if (options.focus !== false) {
     const target = route === "new-minute" ? document.querySelector("#wizard-title") : elements.main;
     target?.focus({ preventScroll: true });
@@ -1512,36 +1500,6 @@ function confirmDelete(id) {
       toast("Minuta eliminada", "El expediente fue retirado del sistema.");
     },
   });
-}
-
-function renderUsers() {
-  elements.main.innerHTML = `
-    <div class="page-stack">
-      <div class="notice-card">${icons.shield}<span>Los permisos se validan también en el servidor: administración ve todos los expedientes; asesor solo accede a los propios.</span></div>
-      <section class="users-grid" aria-label="Usuarios autorizados">
-        ${state.users.map(userCard).join("")}
-      </section>
-      <section class="section-card">
-        <header class="section-card__header"><div><h2>Política de acceso</h2><p>Configuración actual del sistema.</p></div></header>
-        <div class="section-card__body">
-          <div class="review-grid">
-            ${reviewCard("Administrador", [["Visibilidad", "Todas las minutas"], ["Acciones", "Crear, editar, descargar y eliminar"], ["Usuarios", "Consulta de cuentas autorizadas"]])}
-            ${reviewCard("Asesor", [["Visibilidad", "Solo sus minutas"], ["Acciones", "Crear, editar y descargar"], ["Dominio", "@villahermosa.com"]])}
-          </div>
-        </div>
-      </section>
-    </div>`;
-}
-
-function userCard(user) {
-  return `<article class="user-card">
-    <span class="user-card__avatar">${initials(user.display_name)}</span>
-    <div class="user-card__copy">
-      <strong>${escapeHtml(user.display_name)}</strong>
-      <span>${escapeHtml(user.email)}</span>
-      <div class="user-card__meta"><span class="role-badge">${user.role === "admin" ? "Administrador" : "Asesor"}</span><span class="active-dot">Activo</span></div>
-    </div>
-  </article>`;
 }
 
 async function handleMainClick(event) {
