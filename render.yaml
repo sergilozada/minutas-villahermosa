@@ -25,3 +25,7 @@ services:
         value: "1"
       - key: VH_FRAME_ANCESTORS
         value: https://condominio-villa-hermosa.web.app
+      - key: VH_FIREBASE_PROJECT_ID
+        value: minutas-villa-hermosa
+      - key: VH_FIREBASE_FRONTEND_ORIGINS
+        value: https://minutas-villa-hermosa.web.app https://minutas-villa-hermosa.firebaseapp.com

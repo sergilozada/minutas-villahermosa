@@ -38,6 +38,16 @@ class StaticUiTest(unittest.TestCase):
         self.assertIn('class="section-nav"', html)
         self.assertIn('class="section-nav__item is-active"', html)
 
+    def test_firebase_spark_frontend_uses_isolated_project(self):
+        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        schema = STATIC_DIR / "minute_schema.json"
+
+        self.assertIn('projectId: "minutas-villa-hermosa"', script)
+        self.assertIn('USE_FIREBASE_BACKEND', script)
+        self.assertIn('collection(firebaseRuntime.db, "minutes")', script)
+        self.assertIn('https://minutas-villahermosa.onrender.com/api/firebase/generate', script)
+        self.assertTrue(schema.is_file())
+
 
 if __name__ == "__main__":
     unittest.main()

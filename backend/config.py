@@ -55,6 +55,10 @@ def _parse_frame_ancestors(value: str) -> tuple[str, ...]:
 
 
 FRAME_ANCESTORS = _parse_frame_ancestors(os.getenv("VH_FRAME_ANCESTORS", ""))
+FIREBASE_PROJECT_ID = os.getenv("VH_FIREBASE_PROJECT_ID", "").strip()
+FIREBASE_FRONTEND_ORIGINS = _parse_frame_ancestors(
+    os.getenv("VH_FIREBASE_FRONTEND_ORIGINS", "")
+)
 COOKIE_PARTITIONED = bool(FRAME_ANCESTORS) and COOKIE_SECURE
 COOKIE_SAME_SITE = "None" if COOKIE_PARTITIONED else "Lax"
 MAX_JSON_BYTES = 2 * 1024 * 1024

@@ -18,6 +18,8 @@ from .config import (
     COOKIE_PARTITIONED,
     COOKIE_SAME_SITE,
     COOKIE_SECURE,
+    FIREBASE_FRONTEND_ORIGINS,
+    FIREBASE_PROJECT_ID,
     FRAME_ANCESTORS,
     IS_RENDER,
     IS_VERCEL,
@@ -26,6 +28,8 @@ from .config import (
     SESSION_COOKIE,
     SESSION_TTL_SECONDS,
     STATIC_DIR,
+    ADMIN_EMAIL,
+    ASESOR_EMAIL,
 )
 from .database import Database
 from .document_engine import DocumentGenerationError, generate_docx
@@ -72,6 +76,20 @@ class LoginLimiter:
 LOGIN_LIMITER = LoginLimiter()
 
 
+def verify_firebase_id_token(token: str) -> dict[str, Any]:
+    """Verify a Firebase ID token without granting the service database access."""
+    if not FIREBASE_PROJECT_ID:
+        raise RuntimeError("Firebase no está configurado para generar documentos.")
+    import firebase_admin
+    from firebase_admin import auth as firebase_auth
+
+    try:
+        firebase_admin.get_app()
+    except ValueError:
+        firebase_admin.initialize_app(options={"projectId": FIREBASE_PROJECT_ID})
+    return firebase_auth.verify_id_token(token, check_revoked=False)
+
+
 class VillaHermosaHandler(BaseHTTPRequestHandler):
     database = Database()
     server_version = "VillaHermosa/1.0"
@@ -92,13 +110,81 @@ class VillaHermosaHandler(BaseHTTPRequestHandler):
             self._serve_static(path)
 
     def do_POST(self) -> None:  # noqa: N802
-        self._api_mutation("POST", urlparse(self.path).path)
+        path = urlparse(self.path).path
+        if path == "/api/firebase/generate":
+            self._firebase_generate()
+            return
+        self._api_mutation("POST", path)
 
     def do_PUT(self) -> None:  # noqa: N802
         self._api_mutation("PUT", urlparse(self.path).path)
 
     def do_DELETE(self) -> None:  # noqa: N802
         self._api_mutation("DELETE", urlparse(self.path).path)
+
+    def do_OPTIONS(self) -> None:  # noqa: N802
+        path = urlparse(self.path).path
+        origin = self.headers.get("Origin", "")
+        if path != "/api/firebase/generate" or origin not in FIREBASE_FRONTEND_ORIGINS:
+            self.send_error(HTTPStatus.FORBIDDEN)
+            return
+        self._cors_origin = origin
+        self.send_response(HTTPStatus.NO_CONTENT)
+        self._security_headers()
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+        self.send_header("Access-Control-Max-Age", "3600")
+        self.end_headers()
+
+    def _firebase_generate(self) -> None:
+        origin = self.headers.get("Origin", "")
+        if origin not in FIREBASE_FRONTEND_ORIGINS:
+            self._json_error(HTTPStatus.FORBIDDEN, "Origen no autorizado.")
+            return
+        self._cors_origin = origin
+        authorization = self.headers.get("Authorization", "")
+        if not authorization.startswith("Bearer "):
+            self._json_error(HTTPStatus.UNAUTHORIZED, "Tu sesión de Firebase no está activa.")
+            return
+        token = authorization.removeprefix("Bearer ").strip()
+        try:
+            claims = verify_firebase_id_token(token)
+        except Exception:
+            self._json_error(HTTPStatus.UNAUTHORIZED, "No pudimos validar tu sesión de Firebase.")
+            return
+        email = str(claims.get("email", "")).strip().lower()
+        if email not in {ADMIN_EMAIL, ASESOR_EMAIL}:
+            self._json_error(HTTPStatus.FORBIDDEN, "Esta cuenta no tiene acceso a Minutas.")
+            return
+        body = self._read_json()
+        if body is None:
+            return
+        raw_payload = body.get("payload")
+        if not isinstance(raw_payload, dict):
+            self._validation_error({"payload": "Envía un grupo de datos válido."})
+            return
+        payload = normalize_payload(raw_payload)
+        errors = validate_payload(payload, for_generation=True)
+        if errors:
+            self._validation_error(errors, "Faltan datos para generar la minuta.")
+            return
+        try:
+            document = generate_docx(payload)
+        except DocumentGenerationError as error:
+            self._json_error(HTTPStatus.UNPROCESSABLE_ENTITY, str(error))
+            return
+        buyers = payload.get("compradores", [])
+        first_buyer = buyers[0] if isinstance(buyers, list) and buyers else {}
+        client = safe_filename(
+            first_buyer.get("nombre_completo", "") if isinstance(first_buyer, dict) else "",
+            "cliente",
+        )
+        reference = safe_filename(str(body.get("reference", "minuta")), "minuta")
+        self._bytes(
+            document,
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            f"{reference}-{client}.docx",
+        )
 
     def _api_get(self, path: str) -> None:
         if path == "/api/health":
@@ -444,6 +530,11 @@ class VillaHermosaHandler(BaseHTTPRequestHandler):
         )
 
     def _security_headers(self) -> None:
+        cors_origin = getattr(self, "_cors_origin", None)
+        if cors_origin:
+            self.send_header("Access-Control-Allow-Origin", cors_origin)
+            self.send_header("Access-Control-Expose-Headers", "Content-Disposition")
+            self.send_header("Vary", "Origin")
         frame_ancestors = " ".join(FRAME_ANCESTORS) if FRAME_ANCESTORS else "'none'"
         self.send_header("X-Content-Type-Options", "nosniff")
         if not FRAME_ANCESTORS:

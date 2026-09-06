@@ -17,6 +17,26 @@ const state = {
   regularAmountManual: false,
 };
 
+const FIREBASE_CONFIG = Object.freeze({
+  projectId: "minutas-villa-hermosa",
+  appId: "1:860555340487:web:711f3de6b4430b6a626ce2",
+  storageBucket: "minutas-villa-hermosa.firebasestorage.app",
+  apiKey: "AIzaSyDY1h2VCJyCxZICnlKRpXxbLEVpG23THHw",
+  authDomain: "minutas-villa-hermosa.firebaseapp.com",
+  messagingSenderId: "860555340487",
+});
+const FIREBASE_HOSTS = new Set([
+  "minutas-villa-hermosa.web.app",
+  "minutas-villa-hermosa.firebaseapp.com",
+]);
+const USE_FIREBASE_BACKEND = FIREBASE_HOSTS.has(window.location.hostname);
+const DOCUMENT_SERVICE_URL = "https://minutas-villahermosa.onrender.com/api/firebase/generate";
+const AUTHORIZED_EMAILS = new Set([
+  "inmobiliariaathouse@gmail.com",
+  "asesor@villahermosa.com",
+]);
+let firebaseRuntime = null;
+
 document.documentElement.classList.toggle("is-embedded", window.self !== window.top);
 
 const elements = {
@@ -65,6 +85,18 @@ document.addEventListener("DOMContentLoaded", initialize);
 async function initialize() {
   bindStaticEvents();
   try {
+    if (USE_FIREBASE_BACKEND) {
+      await initializeFirebaseRuntime();
+      const firebaseUser = firebaseRuntime.auth.currentUser;
+      if (!firebaseUser || !AUTHORIZED_EMAILS.has(firebaseUser.email?.toLowerCase())) {
+        if (firebaseUser) await firebaseRuntime.signOut(firebaseRuntime.auth);
+        showLogin();
+        return;
+      }
+      state.user = firebaseUserProfile(firebaseUser);
+      await enterApplication();
+      return;
+    }
     const session = await api("/api/session", { suppressAuthRedirect: true });
     state.user = session.user;
     state.csrfToken = session.csrfToken;
@@ -1615,6 +1647,8 @@ function toast(title, message, type = "success") {
 }
 
 async function api(path, options = {}) {
+  if (USE_FIREBASE_BACKEND) return firebaseApi(path, options);
+
   const method = options.method || "GET";
   const headers = { Accept: options.download ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/json" };
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
@@ -1653,6 +1687,238 @@ async function api(path, options = {}) {
     throw apiError;
   }
   return payload;
+}
+
+async function initializeFirebaseRuntime() {
+  if (firebaseRuntime) return firebaseRuntime;
+  const [appModule, authModule, firestoreModule] = await Promise.all([
+    import("https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js"),
+    import("https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js"),
+    import("https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js"),
+  ]);
+  const firebaseApp = appModule.initializeApp(FIREBASE_CONFIG);
+  const auth = authModule.getAuth(firebaseApp);
+  await authModule.setPersistence(auth, authModule.browserLocalPersistence);
+  const db = firestoreModule.getFirestore(firebaseApp);
+  firebaseRuntime = { auth, db, ...authModule, ...firestoreModule };
+  await new Promise((resolve, reject) => {
+    const unsubscribe = authModule.onAuthStateChanged(
+      auth,
+      () => {
+        unsubscribe();
+        resolve();
+      },
+      reject,
+    );
+  });
+  return firebaseRuntime;
+}
+
+function firebaseUserProfile(user) {
+  const email = String(user.email || "").toLowerCase();
+  const admin = email === "inmobiliariaathouse@gmail.com";
+  return {
+    id: user.uid,
+    email,
+    display_name: user.displayName || (admin ? "Administrador Villa Hermosa" : "Asesor Villa Hermosa"),
+    role: admin ? "admin" : "asesor",
+  };
+}
+
+function firebaseApiError(message, status = 500, fieldErrors) {
+  const error = new Error(message);
+  error.status = status;
+  error.fieldErrors = fieldErrors;
+  return error;
+}
+
+function firebaseAuthError(error) {
+  const code = String(error?.code || "");
+  if (["auth/invalid-credential", "auth/user-not-found", "auth/wrong-password"].includes(code)) {
+    return firebaseApiError("Correo o contraseña incorrectos.", 401);
+  }
+  if (code === "auth/too-many-requests") {
+    return firebaseApiError("Demasiados intentos. Espera unos minutos e inténtalo otra vez.", 429);
+  }
+  if (code === "auth/network-request-failed") {
+    return firebaseApiError("No hay conexión con Firebase.", 503);
+  }
+  return firebaseApiError("No pudimos iniciar sesión. Inténtalo nuevamente.", 500);
+}
+
+function requireFirebaseUser(options = {}) {
+  const user = firebaseRuntime?.auth?.currentUser;
+  if (!user || !AUTHORIZED_EMAILS.has(user.email?.toLowerCase())) {
+    if (!options.suppressAuthRedirect) {
+      showLogin();
+      toast("Sesión finalizada", "Ingresa nuevamente para continuar.", "error");
+    }
+    throw firebaseApiError("Tu sesión no está activa.", 401);
+  }
+  return user;
+}
+
+function firebaseMinuteData(payload, existing = {}) {
+  const normalizedPayload = normalizeEditorPayload(payload);
+  const buyers = Array.isArray(normalizedPayload.compradores) ? normalizedPayload.compradores : [];
+  const names = buyers.map((buyer) => String(buyer?.nombre_completo || "").trim()).filter(Boolean);
+  const documents = buyers.map((buyer) => String(buyer?.documento || "").trim()).filter(Boolean);
+  const now = new Date().toISOString();
+  return {
+    ...existing,
+    client_name: names.join(" · "),
+    document_number: documents.join(" · "),
+    payload: normalizedPayload,
+    status: existing.status || "borrador",
+    updated_at: now,
+  };
+}
+
+function nextFirebaseReference(items) {
+  const prefix = new Date().toISOString().slice(0, 7).replace("-", "");
+  const pattern = new RegExp(`^VH-${prefix}-(\\d+)$`);
+  const last = items.reduce((maximum, item) => {
+    const match = pattern.exec(String(item.reference || ""));
+    return match ? Math.max(maximum, Number(match[1])) : maximum;
+  }, 0);
+  return `VH-${prefix}-${String(last + 1).padStart(4, "0")}`;
+}
+
+async function firebaseListMinutes() {
+  const user = requireFirebaseUser();
+  const { collection, getDocs, query, where } = firebaseRuntime;
+  const snapshot = await getDocs(query(
+    collection(firebaseRuntime.db, "minutes"),
+    where("owner_uid", "==", user.uid),
+  ));
+  return snapshot.docs
+    .map((item) => ({ id: item.id, ...item.data() }))
+    .sort((left, right) => String(right.updated_at || "").localeCompare(String(left.updated_at || "")));
+}
+
+async function firebaseStats() {
+  const items = await firebaseListMinutes();
+  return {
+    total: items.length,
+    borradores: items.filter((item) => item.status === "borrador").length,
+    generadas: items.filter((item) => item.status === "generada").length,
+  };
+}
+
+async function firebaseGenerateMinute(id) {
+  const user = requireFirebaseUser();
+  const { doc, getDoc, updateDoc } = firebaseRuntime;
+  const reference = doc(firebaseRuntime.db, "minutes", id);
+  const snapshot = await getDoc(reference);
+  if (!snapshot.exists()) throw firebaseApiError("No encontramos esa minuta.", 404);
+  const item = { id: snapshot.id, ...snapshot.data() };
+  let response;
+  try {
+    response = await fetch(DOCUMENT_SERVICE_URL, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        Accept: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        Authorization: `Bearer ${await user.getIdToken()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ payload: item.payload, reference: item.reference }),
+    });
+  } catch (error) {
+    throw firebaseApiError("No pudimos conectar con el generador de documentos.", 503);
+  }
+  if (!response.ok) {
+    let payload = {};
+    try { payload = await response.json(); } catch (error) { payload = {}; }
+    throw firebaseApiError(
+      payload.error || "No pudimos generar el documento.",
+      response.status,
+      payload.fieldErrors,
+    );
+  }
+  const now = new Date().toISOString();
+  await updateDoc(reference, { status: "generada", generated_at: now, updated_at: now });
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="([^"]+)"/i);
+  return { blob: await response.blob(), filename: match?.[1] };
+}
+
+async function firebaseApi(path, options = {}) {
+  await initializeFirebaseRuntime();
+  const method = options.method || "GET";
+  if (path === "/api/login" && method === "POST") {
+    try {
+      const credential = await firebaseRuntime.signInWithEmailAndPassword(
+        firebaseRuntime.auth,
+        String(options.body?.email || "").toLowerCase(),
+        String(options.body?.password || ""),
+      );
+      if (!AUTHORIZED_EMAILS.has(credential.user.email?.toLowerCase())) {
+        await firebaseRuntime.signOut(firebaseRuntime.auth);
+        throw firebaseApiError("Esta cuenta no tiene acceso a Minutas.", 403);
+      }
+      return { user: firebaseUserProfile(credential.user), csrfToken: null };
+    } catch (error) {
+      if (error?.status) throw error;
+      throw firebaseAuthError(error);
+    }
+  }
+  if (path === "/api/logout" && method === "POST") {
+    await firebaseRuntime.signOut(firebaseRuntime.auth);
+    return { ok: true };
+  }
+  if (path === "/api/session" && method === "GET") {
+    const user = requireFirebaseUser(options);
+    return { user: firebaseUserProfile(user), csrfToken: null };
+  }
+  if (path === "/api/schema" && method === "GET") {
+    const response = await fetch("/minute_schema.json", { cache: "no-store" });
+    if (!response.ok) throw firebaseApiError("No pudimos cargar el formulario.", 503);
+    return response.json();
+  }
+  if (path === "/api/minutes" && method === "GET") {
+    return { items: await firebaseListMinutes() };
+  }
+  if (path === "/api/stats" && method === "GET") return firebaseStats();
+  if (path === "/api/minutes" && method === "POST") {
+    const user = requireFirebaseUser();
+    const items = await firebaseListMinutes();
+    if (items.length >= 5000) throw firebaseApiError("Alcanzaste el límite de expedientes.", 409);
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const item = firebaseMinuteData(options.body?.payload || {}, {
+      id,
+      reference: nextFirebaseReference(items),
+      owner_uid: user.uid,
+      owner_email: user.email,
+      owner_name: firebaseUserProfile(user).display_name,
+      created_by: user.uid,
+      created_at: now,
+      status: "borrador",
+    });
+    await firebaseRuntime.setDoc(firebaseRuntime.doc(firebaseRuntime.db, "minutes", id), item);
+    return item;
+  }
+  const match = /^\/api\/minutes\/([0-9a-f-]{36})(?:\/(generate))?$/.exec(path);
+  if (!match) throw firebaseApiError("Ruta no encontrada.", 404);
+  const [, id, action] = match;
+  if (method === "POST" && action === "generate" && options.download) {
+    return firebaseGenerateMinute(id);
+  }
+  const reference = firebaseRuntime.doc(firebaseRuntime.db, "minutes", id);
+  if (method === "PUT" && !action) {
+    const snapshot = await firebaseRuntime.getDoc(reference);
+    if (!snapshot.exists()) throw firebaseApiError("No encontramos esa minuta.", 404);
+    const existing = { id: snapshot.id, ...snapshot.data(), status: "borrador" };
+    const item = firebaseMinuteData(options.body?.payload || {}, existing);
+    await firebaseRuntime.setDoc(reference, item);
+    return item;
+  }
+  if (method === "DELETE" && !action) {
+    await firebaseRuntime.deleteDoc(reference);
+    return {};
+  }
+  throw firebaseApiError("Acción no permitida.", 405);
 }
 
 function setButtonBusy(button, busy, label = "Procesando…") {

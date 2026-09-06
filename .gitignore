@@ -16,6 +16,7 @@ Thumbs.db
 !.env.example
 .vercel/
 .supabase/
+.firebase/
 
 *.db
 *.db-*

@@ -60,6 +60,18 @@ class EmbeddingSecurityTest(unittest.TestCase):
             f"SameSite=None; Max-Age={http_app.SESSION_TTL_SECONDS}; Secure; Partitioned",
         )
 
+    def test_firebase_document_endpoint_exposes_only_the_trusted_origin(self):
+        trusted_origin = "https://minutas-villa-hermosa.web.app"
+        handler = self.handler()
+        handler._cors_origin = trusted_origin
+
+        handler._security_headers()
+
+        headers = dict(handler.sent_headers)
+        self.assertEqual(headers["Access-Control-Allow-Origin"], trusted_origin)
+        self.assertEqual(headers["Access-Control-Expose-Headers"], "Content-Disposition")
+        self.assertEqual(headers["Vary"], "Origin")
+
 
 if __name__ == "__main__":
     unittest.main()
