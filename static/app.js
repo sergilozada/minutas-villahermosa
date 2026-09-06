@@ -17,6 +17,8 @@ const state = {
   regularAmountManual: false,
 };
 
+document.documentElement.classList.toggle("is-embedded", window.self !== window.top);
+
 const elements = {
   loginView: document.querySelector("#login-view"),
   appView: document.querySelector("#app-view"),

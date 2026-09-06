@@ -624,6 +624,10 @@ body.is-authenticated .skip-link {
   gap: 12px;
 }
 
+.is-embedded .topbar__actions {
+  display: none;
+}
+
 .section-nav {
   display: inline-flex;
   align-items: center;
