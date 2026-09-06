@@ -24,6 +24,17 @@ class StaticUiTest(unittest.TestCase):
         self.assertIn('class="profile-chip__dot"', html)
         self.assertIn('<strong id="profile-name">Admin</strong>', html)
 
+    def test_internal_navigation_is_a_compact_toolbar_not_a_second_sidebar(self):
+        html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+
+        self.assertNotIn('<aside class="sidebar"', html)
+        self.assertNotIn('id="sidebar-toggle"', html)
+        self.assertNotIn("elements.sidebarToggle", script)
+        self.assertNotIn("elements.sidebarCurrent", script)
+        self.assertIn('class="section-nav"', html)
+        self.assertIn('class="section-nav__item is-active"', html)
+
 
 if __name__ == "__main__":
     unittest.main()

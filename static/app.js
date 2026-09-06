@@ -31,9 +31,6 @@ const elements = {
   kicker: document.querySelector("#topbar-kicker"),
   profileName: document.querySelector("#profile-name"),
   profileButton: document.querySelector("#profile-button"),
-  sidebarToggle: document.querySelector("#sidebar-toggle"),
-  sidebarCurrent: document.querySelector("#sidebar-current"),
-  logout: document.querySelector("#logout-button"),
   modalRoot: document.querySelector("#modal-root"),
   toastRegion: document.querySelector("#toast-region"),
 };
@@ -78,9 +75,7 @@ async function initialize() {
 function bindStaticEvents() {
   elements.loginForm.addEventListener("submit", handleLogin);
   elements.togglePassword.addEventListener("click", togglePasswordVisibility);
-  elements.sidebarToggle.addEventListener("click", toggleSidebar);
   elements.profileButton.addEventListener("click", openAccountModal);
-  elements.logout.addEventListener("click", requestLogout);
 
   document.querySelectorAll("[data-route]").forEach((button) => {
     if (button.closest("#main-content")) return;
@@ -145,13 +140,6 @@ function togglePasswordVisibility() {
   elements.loginPassword.type = show ? "text" : "password";
   elements.togglePassword.setAttribute("aria-pressed", String(show));
   elements.togglePassword.setAttribute("aria-label", show ? "Ocultar contraseña" : "Mostrar contraseña");
-}
-
-function toggleSidebar() {
-  const open = !elements.appView.classList.contains("is-sidebar-open");
-  elements.appView.classList.toggle("is-sidebar-open", open);
-  elements.sidebarToggle.setAttribute("aria-expanded", String(open));
-  elements.sidebarToggle.setAttribute("aria-label", open ? "Contraer menú lateral" : "Expandir menú lateral");
 }
 
 function clearLoginErrors() {
@@ -290,7 +278,6 @@ function navigate(route, options = {}) {
   const meta = routeMeta[route] || routeMeta.dashboard;
   elements.title.textContent = meta.title;
   elements.kicker.textContent = meta.kicker;
-  elements.sidebarCurrent.textContent = meta.title;
   document.title = `${meta.title} · Minutas Villa Hermosa`;
   updateNavigation(route);
 

@@ -10,7 +10,7 @@
     />
     <link rel="icon" type="image/png" href="/assets/villa-hermosa-icon.png" />
     <link rel="apple-touch-icon" href="/assets/villa-hermosa-icon.png" />
-    <link rel="stylesheet" href="/styles.css?v=20260905b" />
+    <link rel="stylesheet" href="/styles.css?v=20260906a" />
     <title>Minutas Villa Hermosa</title>
   </head>
   <body>
@@ -148,80 +148,37 @@
       </main>
     </div>
 
-    <div id="app-view" class="app-shell is-sidebar-open" hidden>
-      <aside class="sidebar" aria-label="Navegación principal">
-        <div class="sidebar__brand">
-          <span class="sidebar__mark" aria-hidden="true">VH</span>
-          <img src="/assets/villa-hermosa-wordmark.png" alt="Villa Hermosa" />
-          <span class="sidebar__brand-label">Minutas</span>
-        </div>
-
-        <button
-          id="sidebar-toggle"
-          class="sidebar-toggle"
-          type="button"
-          aria-expanded="true"
-          aria-controls="sidebar-navigation"
-          aria-label="Contraer menú lateral"
-        >
-          <span class="sidebar-toggle__leading">
-            <span class="sidebar-toggle__icon" aria-hidden="true">
-              <span></span><span></span><span></span>
-            </span>
-            <span class="sidebar-toggle__copy">
-              <small>Navegación</small>
-              <strong id="sidebar-current">Inicio</strong>
-            </span>
-          </span>
-          <span class="sidebar-toggle__action" aria-hidden="true">Cerrar</span>
-        </button>
-
-        <nav id="sidebar-navigation" class="sidebar__nav">
-          <button class="nav-item is-active" type="button" data-route="dashboard" aria-label="Inicio" title="Inicio">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <rect x="3" y="3" width="7" height="7" rx="2" />
-              <rect x="14" y="3" width="7" height="7" rx="2" />
-              <rect x="3" y="14" width="7" height="7" rx="2" />
-              <rect x="14" y="14" width="7" height="7" rx="2" />
-            </svg>
-            <span class="nav-item__copy"><strong>Inicio</strong><small>Resumen y actividad</small></span>
-          </button>
-          <button class="nav-item" type="button" data-route="minutes" aria-label="Minutas" title="Minutas">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M6 2h9l4 4v16H6z" />
-              <path d="M14 2v5h5M9 12h7M9 16h7" />
-            </svg>
-            <span class="nav-item__copy"><strong>Minutas</strong><small>Expedientes registrados</small></span>
-          </button>
-          <button class="nav-item" type="button" data-route="new-minute" aria-label="Nueva minuta" title="Nueva minuta">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            <span class="nav-item__copy"><strong>Nueva minuta</strong><small>Crear documento</small></span>
-          </button>
-        </nav>
-
-        <div class="sidebar__footer">
-          <div class="sidebar__partner">
-            <img src="/assets/ayt-house-logo.png" alt="AYT House Inmobiliaria" />
-            <span><strong>A&amp;T House</strong><small>Gestión inmobiliaria</small></span>
-          </div>
-          <button id="logout-button" class="nav-item nav-item--muted" type="button" aria-label="Cerrar sesión" title="Cerrar sesión">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <path d="m16 17 5-5-5-5M21 12H9" />
-            </svg>
-            <span class="nav-item__copy"><strong>Cerrar sesión</strong><small>Finalizar acceso</small></span>
-          </button>
-        </div>
-      </aside>
-
+    <div id="app-view" class="app-shell" hidden>
       <div class="workspace">
         <header class="topbar">
-          <div>
+          <div class="topbar__heading">
             <p id="topbar-kicker" class="topbar__kicker">Panel de gestión</p>
             <h1 id="topbar-title">Inicio</h1>
           </div>
+          <nav class="section-nav" aria-label="Secciones de Minutas">
+            <button class="section-nav__item is-active" type="button" data-route="dashboard" aria-current="page">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="7" height="7" rx="2" />
+                <rect x="14" y="3" width="7" height="7" rx="2" />
+                <rect x="3" y="14" width="7" height="7" rx="2" />
+                <rect x="14" y="14" width="7" height="7" rx="2" />
+              </svg>
+              <span>Inicio</span>
+            </button>
+            <button class="section-nav__item" type="button" data-route="minutes">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M6 2h9l4 4v16H6z" />
+                <path d="M14 2v5h5M9 12h7M9 16h7" />
+              </svg>
+              <span>Minutas</span>
+            </button>
+            <button class="section-nav__item" type="button" data-route="new-minute">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <span>Nueva minuta</span>
+            </button>
+          </nav>
           <div class="topbar__actions">
             <button
               id="profile-button"
@@ -275,6 +232,6 @@
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
     <noscript>Necesitas activar JavaScript para usar el generador de minutas.</noscript>
-    <script type="module" src="/app.js?v=20260905b"></script>
+    <script type="module" src="/app.js?v=20260906a"></script>
   </body>
 </html>
