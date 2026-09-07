@@ -120,6 +120,10 @@ function bindStaticEvents() {
     button.addEventListener("click", openAccountModal);
   });
 
+  document.querySelectorAll('[data-action="logout"]').forEach((button) => {
+    button.addEventListener("click", requestLogout);
+  });
+
   elements.main.addEventListener("click", handleMainClick);
   elements.main.addEventListener("input", handleFormInput);
   elements.main.addEventListener("change", handleFormInput);

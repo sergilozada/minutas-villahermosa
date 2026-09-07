@@ -38,6 +38,16 @@ class StaticUiTest(unittest.TestCase):
         self.assertIn('class="section-nav"', html)
         self.assertIn('class="section-nav__item is-active"', html)
 
+    def test_logout_action_is_next_to_new_minute_navigation(self):
+        html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+
+        create_position = html.index('data-route="new-minute"')
+        logout_position = html.index('id="logout-button"')
+        self.assertGreater(logout_position, create_position)
+        self.assertIn('data-action="logout"', html)
+        self.assertIn('button.addEventListener("click", requestLogout)', script)
+
     def test_firebase_spark_frontend_uses_isolated_project(self):
         script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
         schema = STATIC_DIR / "minute_schema.json"

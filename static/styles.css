@@ -683,6 +683,17 @@ body.is-authenticated .skip-link {
   stroke-width: 2.2;
 }
 
+.section-nav__item--logout {
+  margin-left: 4px;
+  color: var(--navy-800);
+  background: var(--surface-muted);
+}
+
+.section-nav__item--logout:hover {
+  color: var(--teal-700);
+  background: var(--teal-50);
+}
+
 .profile-chip {
   min-height: 38px;
   display: inline-flex;
@@ -1852,6 +1863,10 @@ body.is-authenticated .skip-link {
 
   .section-nav__item {
     padding-inline: 12px;
+  }
+
+  .section-nav__item--logout span {
+    display: none;
   }
 
   .login-layout {
