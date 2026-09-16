@@ -1,12 +1,85 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+import time
 import unittest
 from unittest.mock import patch
+
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.x509.oid import NameOID
+from google.auth import crypt, jwt
+from google.auth.exceptions import TransportError
 
 from backend import config, http_app
 
 
 class EmbeddingSecurityTest(unittest.TestCase):
+    def signed_firebase_token(self, **overrides):
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        private_pem = key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+        now = datetime.now(timezone.utc)
+        certificate = (
+            x509.CertificateBuilder()
+            .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "test")]))
+            .issuer_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "test")]))
+            .public_key(key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(now - timedelta(minutes=1))
+            .not_valid_after(now + timedelta(hours=1))
+            .sign(key, hashes.SHA256())
+        )
+        claims = {
+            "aud": "minutas-villa-hermosa",
+            "iss": "https://securetoken.google.com/minutas-villa-hermosa",
+            "sub": "test-user",
+            "email": "asesor@villahermosa.com",
+            "iat": int(time.time()) - 10,
+            "exp": int(time.time()) + 3600,
+            "auth_time": int(time.time()) - 10,
+        }
+        claims.update(overrides)
+        token = jwt.encode(
+            crypt.RSASigner.from_string(private_pem), claims, key_id="test-key"
+        ).decode("ascii")
+        certs = {"test-key": certificate.public_bytes(serialization.Encoding.PEM).decode("ascii")}
+        return token, certs
+
+    def test_firebase_token_verification_requires_signature_audience_and_issuer(self):
+        token, certs = self.signed_firebase_token()
+        with patch.object(http_app, "FIREBASE_PROJECT_ID", "minutas-villa-hermosa"), patch(
+            "google.oauth2.id_token._fetch_certs", return_value=certs
+        ):
+            self.assertEqual(http_app.verify_firebase_id_token(token)["sub"], "test-user")
+            parts = token.split(".")
+            parts[2] = ("A" if parts[2][0] != "A" else "B") + parts[2][1:]
+            with self.assertRaises(http_app.InvalidFirebaseToken):
+                http_app.verify_firebase_id_token(".".join(parts))
+
+        for bad_claims in (
+            {"aud": "another-project"},
+            {"iss": "https://securetoken.google.com/another-project"},
+            {"sub": ""},
+            {"auth_time": int(time.time()) + 3600},
+        ):
+            bad_token, bad_certs = self.signed_firebase_token(**bad_claims)
+            with patch.object(http_app, "FIREBASE_PROJECT_ID", "minutas-villa-hermosa"), patch(
+                "google.oauth2.id_token._fetch_certs", return_value=bad_certs
+            ), self.assertRaises(http_app.InvalidFirebaseToken):
+                http_app.verify_firebase_id_token(bad_token)
+
+    def test_firebase_certificate_outage_is_not_reported_as_invalid_session(self):
+        token, _ = self.signed_firebase_token()
+        with patch.object(http_app, "FIREBASE_PROJECT_ID", "minutas-villa-hermosa"), patch(
+            "google.oauth2.id_token._fetch_certs", side_effect=TransportError("offline")
+        ), self.assertRaises(http_app.FirebaseVerificationUnavailable):
+            http_app.verify_firebase_id_token(token)
+
     def handler(self):
         instance = object.__new__(http_app.VillaHermosaHandler)
         instance.sent_headers = []

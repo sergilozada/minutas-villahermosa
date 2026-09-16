@@ -55,7 +55,7 @@ def _parse_frame_ancestors(value: str) -> tuple[str, ...]:
 
 
 FRAME_ANCESTORS = _parse_frame_ancestors(os.getenv("VH_FRAME_ANCESTORS", ""))
-FIREBASE_PROJECT_ID = os.getenv("VH_FIREBASE_PROJECT_ID", "").strip()
+FIREBASE_PROJECT_ID = (os.getenv("VH_FIREBASE_PROJECT_ID") or "minutas-villa-hermosa").strip()
 FIREBASE_FRONTEND_ORIGINS = _parse_frame_ancestors(
     os.getenv("VH_FIREBASE_FRONTEND_ORIGINS", "")
 )

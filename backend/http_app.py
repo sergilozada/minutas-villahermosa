@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 import ipaddress
 import mimetypes
@@ -13,6 +15,10 @@ from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
+
+from google.auth import exceptions as google_exceptions
+from google.auth.transport.requests import Request
+from google.oauth2 import id_token
 
 from .config import (
     COOKIE_PARTITIONED,
@@ -76,18 +82,46 @@ class LoginLimiter:
 LOGIN_LIMITER = LoginLimiter()
 
 
-def verify_firebase_id_token(token: str) -> dict[str, Any]:
-    """Verify a Firebase ID token without granting the service database access."""
-    if not FIREBASE_PROJECT_ID:
-        raise RuntimeError("Firebase no está configurado para generar documentos.")
-    import firebase_admin
-    from firebase_admin import auth as firebase_auth
+class InvalidFirebaseToken(ValueError):
+    """The supplied token did not pass Firebase's signature or claim checks."""
 
+
+class FirebaseVerificationUnavailable(RuntimeError):
+    """Firebase's public signing keys could not be obtained."""
+
+
+def verify_firebase_id_token(token: str) -> dict[str, Any]:
+    """Verify a Firebase ID token with Google's public keys, without ADC on Render."""
+    if not FIREBASE_PROJECT_ID:
+        raise FirebaseVerificationUnavailable("Firebase project ID is missing")
     try:
-        firebase_admin.get_app()
-    except ValueError:
-        firebase_admin.initialize_app(options={"projectId": FIREBASE_PROJECT_ID})
-    return firebase_auth.verify_id_token(token, check_revoked=False)
+        header_part = token.split(".", 1)[0]
+        header = json.loads(base64.urlsafe_b64decode(header_part + "=" * (-len(header_part) % 4)))
+        if header.get("alg") != "RS256" or not header.get("kid"):
+            raise InvalidFirebaseToken("Unexpected token signing algorithm")
+        claims = id_token.verify_firebase_token(
+            token, Request(), audience=FIREBASE_PROJECT_ID
+        )
+        if claims.get("iss") != f"https://securetoken.google.com/{FIREBASE_PROJECT_ID}":
+            raise InvalidFirebaseToken("Unexpected token issuer")
+        subject = claims.get("sub")
+        if not isinstance(subject, str) or not 0 < len(subject) <= 128:
+            raise InvalidFirebaseToken("Invalid token subject")
+        auth_time = claims.get("auth_time")
+        if (
+            isinstance(auth_time, bool)
+            or not isinstance(auth_time, (int, float))
+            or auth_time < 0
+            or auth_time > time.time()
+        ):
+            raise InvalidFirebaseToken("Invalid authentication time")
+        return dict(claims)
+    except google_exceptions.TransportError as exc:
+        raise FirebaseVerificationUnavailable("Could not fetch Firebase signing keys") from exc
+    except (InvalidFirebaseToken, ValueError, binascii.Error, google_exceptions.GoogleAuthError) as exc:
+        raise InvalidFirebaseToken("Invalid Firebase ID token") from exc
+    except Exception as exc:
+        raise FirebaseVerificationUnavailable("Firebase token verification failed") from exc
 
 
 class VillaHermosaHandler(BaseHTTPRequestHandler):
@@ -149,8 +183,11 @@ class VillaHermosaHandler(BaseHTTPRequestHandler):
         token = authorization.removeprefix("Bearer ").strip()
         try:
             claims = verify_firebase_id_token(token)
-        except Exception:
+        except InvalidFirebaseToken:
             self._json_error(HTTPStatus.UNAUTHORIZED, "No pudimos validar tu sesión de Firebase.")
+            return
+        except FirebaseVerificationUnavailable:
+            self._json_error(HTTPStatus.SERVICE_UNAVAILABLE, "No pudimos conectar con Firebase para validar tu sesión. Vuelve a intentarlo.")
             return
         email = str(claims.get("email", "")).strip().lower()
         if email not in {ADMIN_EMAIL, ASESOR_EMAIL}:
@@ -188,7 +225,12 @@ class VillaHermosaHandler(BaseHTTPRequestHandler):
 
     def _api_get(self, path: str) -> None:
         if path == "/api/health":
-            self._json({"ok": True, "service": "Villa Hermosa Minutas"})
+            self._json({
+                "ok": True,
+                "service": "Villa Hermosa Minutas",
+                "firebaseProject": FIREBASE_PROJECT_ID,
+                "firebaseVerifier": "public-keys-v1",
+            })
             return
 
         session = self._session()
