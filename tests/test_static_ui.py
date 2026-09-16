@@ -58,6 +58,17 @@ class StaticUiTest(unittest.TestCase):
         self.assertIn('https://minutas-villahermosa.onrender.com/api/firebase/generate', script)
         self.assertTrue(schema.is_file())
 
+    def test_generation_times_out_and_wakes_sleeping_service(self):
+        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('DOCUMENT_SERVICE_HEALTH_URL', script)
+        self.assertIn('DOCUMENT_REQUEST_TIMEOUT_MS = 90_000', script)
+        self.assertIn('signal: controller.signal', script)
+        self.assertIn('window.clearTimeout(timeout)', script)
+        self.assertIn('El generador tardó demasiado en responder', script)
+        self.assertIn('/app.js?v=20260916a', html)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -31,6 +31,8 @@ const FIREBASE_HOSTS = new Set([
 ]);
 const USE_FIREBASE_BACKEND = FIREBASE_HOSTS.has(window.location.hostname);
 const DOCUMENT_SERVICE_URL = "https://minutas-villahermosa.onrender.com/api/firebase/generate";
+const DOCUMENT_SERVICE_HEALTH_URL = "https://minutas-villahermosa.onrender.com/api/health";
+const DOCUMENT_REQUEST_TIMEOUT_MS = 90_000;
 const AUTHORIZED_EMAILS = new Set([
   "inmobiliariaathouse@gmail.com",
   "asesor@villahermosa.com",
@@ -205,6 +207,10 @@ async function enterApplication() {
   document.body.classList.add("is-authenticated");
   hydrateProfile();
   renderLoading();
+  if (USE_FIREBASE_BACKEND) {
+    // Render Free can sleep after inactivity. Wake it while the user prepares the minute.
+    void fetch(DOCUMENT_SERVICE_HEALTH_URL, { mode: "no-cors", cache: "no-store" }).catch(() => {});
+  }
   try {
     const [schema, minutesResponse, stats] = await Promise.all([
       api("/api/schema"),
@@ -1816,11 +1822,13 @@ async function firebaseGenerateMinute(id) {
   const snapshot = await getDoc(reference);
   if (!snapshot.exists()) throw firebaseApiError("No encontramos esa minuta.", 404);
   const item = { id: snapshot.id, ...snapshot.data() };
-  let response;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), DOCUMENT_REQUEST_TIMEOUT_MS);
   try {
-    response = await fetch(DOCUMENT_SERVICE_URL, {
+    const response = await fetch(DOCUMENT_SERVICE_URL, {
       method: "POST",
       mode: "cors",
+      signal: controller.signal,
       headers: {
         Accept: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         Authorization: `Bearer ${await user.getIdToken()}`,
@@ -1828,23 +1836,33 @@ async function firebaseGenerateMinute(id) {
       },
       body: JSON.stringify({ payload: item.payload, reference: item.reference }),
     });
+    if (!response.ok) {
+      let payload = {};
+      try { payload = await response.json(); } catch (error) { payload = {}; }
+      throw firebaseApiError(
+        payload.error || "No pudimos generar el documento.",
+        response.status,
+        payload.fieldErrors,
+      );
+    }
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="([^"]+)"/i);
+    const blob = await response.blob();
+    if (!blob.size) throw firebaseApiError("El generador devolvió un archivo vacío. Vuelve a intentarlo.", 502);
+    const now = new Date().toISOString();
+    void updateDoc(reference, { status: "generada", generated_at: now, updated_at: now }).catch(() => {
+      toast("Documento generado", "No se pudo actualizar su estado. Comprueba la conexión más tarde.", "error");
+    });
+    return { blob, filename: match?.[1] };
   } catch (error) {
+    if (controller.signal.aborted) {
+      throw firebaseApiError("El generador tardó demasiado en responder. Tu minuta sigue guardada; vuelve a intentar la descarga.", 504);
+    }
+    if (error?.status) throw error;
     throw firebaseApiError("No pudimos conectar con el generador de documentos.", 503);
+  } finally {
+    window.clearTimeout(timeout);
   }
-  if (!response.ok) {
-    let payload = {};
-    try { payload = await response.json(); } catch (error) { payload = {}; }
-    throw firebaseApiError(
-      payload.error || "No pudimos generar el documento.",
-      response.status,
-      payload.fieldErrors,
-    );
-  }
-  const now = new Date().toISOString();
-  await updateDoc(reference, { status: "generada", generated_at: now, updated_at: now });
-  const disposition = response.headers.get("Content-Disposition") || "";
-  const match = disposition.match(/filename="([^"]+)"/i);
-  return { blob: await response.blob(), filename: match?.[1] };
 }
 
 async function firebaseApi(path, options = {}) {
