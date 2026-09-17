@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import unittest
+from zipfile import ZipFile
 
-from backend.config import STATIC_DIR
+from backend.config import ROOT_DIR, STATIC_DIR
 
 
 class StaticUiTest(unittest.TestCase):
@@ -55,19 +56,34 @@ class StaticUiTest(unittest.TestCase):
         self.assertIn('projectId: "minutas-villa-hermosa"', script)
         self.assertIn('USE_FIREBASE_BACKEND', script)
         self.assertIn('collection(firebaseRuntime.db, "minutes")', script)
-        self.assertIn('https://minutas-villahermosa.onrender.com/api/firebase/generate', script)
+        self.assertIn("new Worker('/minute-generator-worker.js", script)
+        self.assertNotIn('minutas-villahermosa.onrender.com', script)
         self.assertTrue(schema.is_file())
 
-    def test_generation_times_out_and_wakes_sleeping_service(self):
+    def test_generation_runs_locally_with_timeout_and_progress(self):
         script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
         html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+        worker = (STATIC_DIR / "minute-generator-worker.js").read_text(encoding="utf-8")
 
-        self.assertIn('DOCUMENT_SERVICE_HEALTH_URL', script)
-        self.assertIn('DOCUMENT_REQUEST_TIMEOUT_MS = 90_000', script)
-        self.assertIn('signal: controller.signal', script)
-        self.assertIn('window.clearTimeout(timeout)', script)
-        self.assertIn('El generador tardó demasiado en responder', script)
-        self.assertIn('/app.js?v=20260916a', html)
+        self.assertIn('DOCUMENT_GENERATION_TIMEOUT_MS = 120_000', script)
+        self.assertIn('Cargando motor de documentos', worker)
+        self.assertIn('generate_docx(normalized)', worker)
+        self.assertIn('/app.js?v=20260916b', html)
+
+    def test_browser_engine_archive_matches_python_sources(self):
+        paths = (
+            'backend/__init__.py',
+            'backend/config.py',
+            'backend/schema.py',
+            'backend/document_engine.py',
+            'config/minute_schema.json',
+            'templates/minuta_financiado_template.docx',
+            'static/assets/ayt-house-logo.png',
+            'static/assets/villa-hermosa-wordmark.png',
+        )
+        with ZipFile(STATIC_DIR / 'engine.zip') as archive:
+            for path in paths:
+                self.assertEqual(archive.read(path), (ROOT_DIR / path).read_bytes())
 
 
 if __name__ == "__main__":

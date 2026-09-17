@@ -30,14 +30,15 @@ const FIREBASE_HOSTS = new Set([
   "minutas-villa-hermosa.firebaseapp.com",
 ]);
 const USE_FIREBASE_BACKEND = FIREBASE_HOSTS.has(window.location.hostname);
-const DOCUMENT_SERVICE_URL = "https://minutas-villahermosa.onrender.com/api/firebase/generate";
-const DOCUMENT_SERVICE_HEALTH_URL = "https://minutas-villahermosa.onrender.com/api/health";
-const DOCUMENT_REQUEST_TIMEOUT_MS = 90_000;
+const DOCUMENT_GENERATION_TIMEOUT_MS = 120_000;
 const AUTHORIZED_EMAILS = new Set([
   "inmobiliariaathouse@gmail.com",
   "asesor@villahermosa.com",
 ]);
 let firebaseRuntime = null;
+let documentWorker = null;
+let nextDocumentRequestId = 0;
+const pendingDocuments = new Map();
 
 document.documentElement.classList.toggle("is-embedded", window.self !== window.top);
 
@@ -207,10 +208,6 @@ async function enterApplication() {
   document.body.classList.add("is-authenticated");
   hydrateProfile();
   renderLoading();
-  if (USE_FIREBASE_BACKEND) {
-    // Render Free can sleep after inactivity. Wake it while the user prepares the minute.
-    void fetch(DOCUMENT_SERVICE_HEALTH_URL, { mode: "no-cors", cache: "no-store" }).catch(() => {});
-  }
   try {
     const [schema, minutesResponse, stats] = await Promise.all([
       api("/api/schema"),
@@ -1418,10 +1415,10 @@ async function generateCurrent(button) {
     toast("Faltan datos", "Revisa los campos marcados antes de generar.", "error");
     return;
   }
-  setButtonBusy(button, true, "Generando…");
+  setButtonBusy(button, true, "Preparando documento…");
   try {
     const item = await saveDraft({ quiet: true });
-    await downloadMinute(item.id);
+    await downloadMinute(item.id, { onProgress: label => setButtonBusy(button, true, label) });
     await refreshData();
     navigate("minutes");
     toast("Minuta generada", "El documento Word se descargó con todos los campos completados.");
@@ -1433,9 +1430,9 @@ async function generateCurrent(button) {
 }
 
 async function generateFromList(id, button) {
-  if (button) setButtonBusy(button, true, "Generando…");
+  if (button) setButtonBusy(button, true, "Preparando documento…");
   try {
-    await downloadMinute(id);
+    await downloadMinute(id, { onProgress: label => setButtonBusy(button, true, label) });
     await refreshData();
     if (state.route === "dashboard") renderDashboard();
     else renderMinutes();
@@ -1461,8 +1458,12 @@ async function generateFromList(id, button) {
   }
 }
 
-async function downloadMinute(id) {
-  const result = await api(`/api/minutes/${id}/generate`, { method: "POST", download: true });
+async function downloadMinute(id, options = {}) {
+  const result = await api(`/api/minutes/${id}/generate`, {
+    method: "POST",
+    download: true,
+    onProgress: options.onProgress,
+  });
   const url = URL.createObjectURL(result.blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -1470,7 +1471,7 @@ async function downloadMinute(id) {
   document.body.append(anchor);
   anchor.click();
   anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
 function applyApiValidation(error) {
@@ -1815,54 +1816,88 @@ async function firebaseStats() {
   };
 }
 
-async function firebaseGenerateMinute(id) {
-  const user = requireFirebaseUser();
+function failPendingDocuments(error) {
+  documentWorker?.terminate();
+  documentWorker = null;
+  for (const request of pendingDocuments.values()) {
+    window.clearTimeout(request.timeout);
+    request.reject(error);
+  }
+  pendingDocuments.clear();
+}
+
+function getDocumentWorker() {
+  if (documentWorker) return documentWorker;
+  documentWorker = new Worker('/minute-generator-worker.js?v=20260916b', { type: 'module' });
+  documentWorker.onmessage = ({ data }) => {
+    const request = pendingDocuments.get(data.id);
+    if (!request) return;
+    if (data.progress) {
+      request.onProgress?.(data.progress);
+      return;
+    }
+    window.clearTimeout(request.timeout);
+    pendingDocuments.delete(data.id);
+    if (data.fieldErrors) {
+      request.reject(firebaseApiError('Faltan datos para generar la minuta.', 422, data.fieldErrors));
+    } else if (data.error) {
+      request.reject(firebaseApiError(data.error, 500));
+    } else {
+      request.resolve(data.documentBytes);
+    }
+  };
+  documentWorker.onerror = () => {
+    failPendingDocuments(firebaseApiError('No se pudo iniciar el generador local. Recarga la página e inténtalo nuevamente.', 503));
+  };
+  return documentWorker;
+}
+
+function generateDocumentInBrowser(payload, onProgress) {
+  return new Promise((resolve, reject) => {
+    let worker;
+    try {
+      worker = getDocumentWorker();
+    } catch (error) {
+      reject(firebaseApiError('Tu navegador no pudo iniciar el generador de documentos.', 503));
+      return;
+    }
+    const id = ++nextDocumentRequestId;
+    const timeout = window.setTimeout(() => {
+      failPendingDocuments(firebaseApiError('La generación tardó demasiado. La minuta sigue guardada; vuelve a intentar la descarga.', 504));
+    }, DOCUMENT_GENERATION_TIMEOUT_MS);
+    pendingDocuments.set(id, { resolve, reject, onProgress, timeout });
+    worker.postMessage({ id, payload });
+  });
+}
+
+function safeDocumentFilename(value, fallback) {
+  return String(value || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .replace(/^[-._]+|[-._]+$/g, '')
+    .slice(0, 90) || fallback;
+}
+
+async function firebaseGenerateMinute(id, onProgress) {
+  requireFirebaseUser();
   const { doc, getDoc, updateDoc } = firebaseRuntime;
   const reference = doc(firebaseRuntime.db, "minutes", id);
   const snapshot = await getDoc(reference);
   if (!snapshot.exists()) throw firebaseApiError("No encontramos esa minuta.", 404);
   const item = { id: snapshot.id, ...snapshot.data() };
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), DOCUMENT_REQUEST_TIMEOUT_MS);
-  try {
-    const response = await fetch(DOCUMENT_SERVICE_URL, {
-      method: "POST",
-      mode: "cors",
-      signal: controller.signal,
-      headers: {
-        Accept: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        Authorization: `Bearer ${await user.getIdToken()}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ payload: item.payload, reference: item.reference }),
-    });
-    if (!response.ok) {
-      let payload = {};
-      try { payload = await response.json(); } catch (error) { payload = {}; }
-      throw firebaseApiError(
-        payload.error || "No pudimos generar el documento.",
-        response.status,
-        payload.fieldErrors,
-      );
-    }
-    const disposition = response.headers.get("Content-Disposition") || "";
-    const match = disposition.match(/filename="([^"]+)"/i);
-    const blob = await response.blob();
-    if (!blob.size) throw firebaseApiError("El generador devolvió un archivo vacío. Vuelve a intentarlo.", 502);
-    const now = new Date().toISOString();
-    void updateDoc(reference, { status: "generada", generated_at: now, updated_at: now }).catch(() => {
-      toast("Documento generado", "No se pudo actualizar su estado. Comprueba la conexión más tarde.", "error");
-    });
-    return { blob, filename: match?.[1] };
-  } catch (error) {
-    if (controller.signal.aborted) {
-      throw firebaseApiError("El generador tardó demasiado en responder. Tu minuta sigue guardada; vuelve a intentar la descarga.", 504);
-    }
-    if (error?.status) throw error;
-    throw firebaseApiError("No pudimos conectar con el generador de documentos.", 503);
-  } finally {
-    window.clearTimeout(timeout);
-  }
+  const bytes = await generateDocumentInBrowser(item.payload, onProgress);
+  if (!bytes?.byteLength) throw firebaseApiError('El generador devolvió un archivo vacío. Vuelve a intentarlo.', 502);
+  const firstBuyer = item.payload?.compradores?.[0] || {};
+  const filename = `${safeDocumentFilename(item.reference, 'minuta')}-${safeDocumentFilename(firstBuyer.nombre_completo, 'cliente')}.docx`;
+  const now = new Date().toISOString();
+  void updateDoc(reference, { status: "generada", generated_at: now, updated_at: now }).catch(() => {
+    toast("Documento generado", "No se pudo actualizar su estado. Comprueba la conexión más tarde.", "error");
+  });
+  return {
+    blob: new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }),
+    filename,
+  };
 }
 
 async function firebaseApi(path, options = {}) {
@@ -1925,7 +1960,7 @@ async function firebaseApi(path, options = {}) {
   if (!match) throw firebaseApiError("Ruta no encontrada.", 404);
   const [, id, action] = match;
   if (method === "POST" && action === "generate" && options.download) {
-    return firebaseGenerateMinute(id);
+    return firebaseGenerateMinute(id, options.onProgress);
   }
   const reference = firebaseRuntime.doc(firebaseRuntime.db, "minutes", id);
   if (method === "PUT" && !action) {
