@@ -6,7 +6,7 @@ Sistema web para registrar compradores, generar minutas financiadas y crear cron
 
 Minutas Villa Hermosa convierte los datos del cliente y del lote en una minuta lista para descargar, sin editar Word manualmente. La aplicación conserva el contenido contractual aprobado, admite uno o varios compradores, organiza pagos de inicial por fecha y genera un cronograma vertical junto con el documento final.
 
-El proyecto funciona con SQLite durante el desarrollo local y utiliza Supabase Postgres al publicarse. La interfaz y la API Python pueden ejecutarse en un contenedor con HTTPS (Cloud Run o Render); también se conserva la entrada para Vercel.
+La versión integrada en Control Villa Hermosa se publica en Firebase Hosting, guarda las minutas en Cloud Firestore y genera el archivo Word en el navegador con el motor Python empaquetado en el propio Hosting. La descarga no utiliza Render ni un servidor externo. El servidor Python con SQLite/Supabase permanece como modo independiente y legado.
 
 ## Funcionalidades principales
 
@@ -28,13 +28,14 @@ El proyecto funciona con SQLite durante el desarrollo local y utiliza Supabase P
 - Python 3.12 y `BaseHTTPRequestHandler` para la API.
 - HTML5, CSS3 y JavaScript sin framework para la interfaz.
 - SQLite para desarrollo local.
-- Supabase Postgres para persistencia en producción.
-- Contenedor Python con HTTPS para alojamiento de la web y la API; entrada Vercel opcional.
+- Firebase Authentication y Cloud Firestore para la versión integrada en producción.
+- Firebase Hosting y Pyodide local para generar y descargar el DOCX sin Render.
+- SQLite/Supabase y el contenedor Python se conservan para el modo independiente.
 - OOXML para completar y generar documentos Word en memoria.
 
 ## Sitio web
 
-La vista previa está publicada en [Minutas Villa Hermosa](https://minutas-villahermosa.onrender.com/). El panel principal se encuentra en [Condominio Villa Hermosa](https://condominio-villa-hermosa.web.app); su base Firebase es independiente de Minutas.
+La versión activa está publicada en [Minutas Villa Hermosa](https://minutas-villa-hermosa.web.app/) e integrada en [Control Villa Hermosa](https://villa-hermosa-lotes.web.app/).
 
 ## Repositorio
 
@@ -47,16 +48,16 @@ Reducir el tiempo y los errores al preparar contratos financiados, centralizar l
 ## Arquitectura
 
 ```text
-Panel Firebase ── sección Minutas (iframe autorizado)
+Control Villa Hermosa ── sección Minutas (iframe autorizado)
    │
    ▼
-Alojamiento Python HTTPS ── interfaz + API + generación DOCX
+Firebase Hosting ── interfaz + motor DOCX en el navegador
    │
    ▼
-Supabase Postgres ── usuarios, sesiones, minutas y auditoría
+Firebase Authentication + Cloud Firestore ── sesión y minutas
 ```
 
-Supabase conserva los datos; el alojamiento Python sirve la aplicación. No se almacena SQLite en discos temporales del proveedor ni se importa la cartera de clientes desde Firebase.
+El generador descarga desde el mismo Hosting su motor y plantilla, y produce el `.docx` localmente. El modo Python/Supabase descrito más abajo es legado e independiente: no interviene en la descarga del Control actual.
 
 ## Ejecución local
 
@@ -78,7 +79,7 @@ python server.py
 
 Las variables solo crean cuentas que todavía no existen; no reemplazan la contraseña de una cuenta ya guardada.
 
-## Despliegue con Supabase
+## Despliegue legado con Supabase (no usado por Control)
 
 El contenedor incluido admite Cloud Run y Render. En ambos casos utiliza `DATABASE_URL`, escucha el `PORT` del proveedor y activa cookies seguras. El servidor rechaza un arranque alojado sin PostgreSQL; el modo local sigue usando SQLite si no se configura `DATABASE_URL`.
 
